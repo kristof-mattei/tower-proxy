@@ -1,25 +1,74 @@
-[workspace]
-resolver = "3"
-members = ["crates/*"]
-
-[workspace.package]
+[package]
+name = "tower-proxy"
 version = "0.0.0-development"
 edition = "2024"
-rust-version = "1.94.1"
-authors = ["Kristof Mattei"]
-description = "Rust seed application"
-license = "MIT"
-categories = ["starter", "seed"]
-keywords = ["integrity", "seed", "starter", "docker", "release"]
-repository = "https://github.com/kristof-mattei/rust-seed"
-include = ["crates/**", "/LICENSE", "/LICENSE-*"]
+rust-version = "1.88.0"
+authors = ["Kristof Mattei", "Masato Nakata <masaton@naughie.com>"]
+description = "Tower service for reverse proxy"
+license = "MIT OR Apache-2.0"
+categories = ["asynchronous", "web-programming", "web-programming::http-server"]
+keywords = ["http", "tower", "axum", "reverse", "proxy"]
+repository = "https://github.com/kristof-mattei/tower-proxy"
+documentation = "https://docs.rs/tower-proxy"
+readme = "README.md"
+include = ["src/**", "/LICENSE", "/LICENSE-*"]
 
-[workspace.dependencies]
+[features]
+default = ["http1"]
+http1 = ["hyper/http1", "hyper-util/http1"]
+http2 = ["hyper/http2", "hyper-util/http2"]
+https = ["nativetls"]
+nativetls = ["hyper-tls"]
+rustls = ["rustls-webpki-roots"]
+rustls-http2 = ["http2", "rustls", "hyper-rustls/http2"]
+rustls-native-roots = ["__rustls", "hyper-rustls/rustls-native-certs"]
+rustls-webpki-roots = ["__rustls", "hyper-rustls/webpki-roots"]
+rustls-ring = ["__rustls", "hyper-rustls/ring"]
+rustls-aws-lc = ["__rustls", "hyper-rustls/aws-lc-rs"]
 
-[workspace.metadata.spellcheck]
+__rustls = ["hyper-rustls"]
+
+[dependencies]
+axum = { version = "0.8.6", optional = true }
+http = "1.3.1"
+hyper = { version = "1.7.0", features = ["client"] }
+hyper-rustls = { version = "0.27.7", default-features = false, features = [
+    "http1",
+    "logging",
+    "native-tokio",
+    "tls12",
+], optional = true }
+hyper-tls = { version = "0.6.0", optional = true }
+hyper-util = { version = "0.1.17", features = [
+    "client",
+    "client-legacy",
+    "tokio",
+] }
+regex = "1.12.2"
+tower-service = "0.3.3"
+tracing = "0.1.41"
+
+[dev-dependencies]
+axum = "0.8.6"
+http-body-util = "0.1.3"
+mockito = "1.7.0"
+pretty_assertions = "1.4.1"
+reqwest = "0.13.1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+
+[[example]]
+doc-scrape-examples = true
+name = "http2-proxy"
+required-features = ["axum"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[package.metadata.spellcheck]
 config = "spellcheck.toml"
 
-[workspace.lints.clippy]
+[lints.clippy]
 # don't stop from compiling / running
 all = "warn"
 cargo = "warn"
@@ -147,8 +196,8 @@ precedence_bits = { level = "deny", priority = 127 }
 # print_stderr = { level = "deny", priority = 127 }
 # Debatable
 # print_stdout = { level = "deny", priority = 127 }
-# Disable in libs
-pub_use = { level = "deny", priority = 127 }
+# Disabled in libs
+# pub_use = { level = "deny", priority = 127 }
 # No, we want the shorthand
 # pub_with_shorthand = { level = "deny", priority = 127 }
 pub_without_shorthand = { level = "deny", priority = 127 }
@@ -243,6 +292,6 @@ redundant_else = { level = "allow", priority = 127 }
 # so we don't inline anything
 uninlined_format_args = { level = "allow", priority = 127 }
 
-[workspace.lints.rust]
+[lints.rust]
 let_underscore_drop = { level = "deny", priority = 127 }
 non_ascii_idents = { level = "deny", priority = 127 }

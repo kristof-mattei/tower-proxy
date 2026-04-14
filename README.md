@@ -1,26 +1,17 @@
-# Rust seed application
+# tower-proxy
 
-This is a framework for building Rust applications
+## Purpose
 
-It supports:
+`tower-proxy` is [tower](https://crates.io/crates/tower) `Service`s that allows it to reverse proxy requests.
 
-- Building multi-platform images
-- Reusing images when merging in PRs to preserve provenance
-    - Support for tags like `pr-${PR_NUMBER}-latest` (last build on PR), `edge` (last build on `main`), `pr-${SHA_MAIN_HEAD}-${SHA_PR_HEAD}` (uniquely identifying the merge result of a PR)
-- Container attestation
-- Crate publishing
-- Release publishing
-    - Crate publishing to crates.io
-    - Container re-tagging to `:latest`
+These `Service`s are implemented to be used in [axum](https://crates.io/crates/axum), but can also be used in a more general situation.
 
-## TODO
+See the [documentation](https://docs.rs/tower-proxy).
 
-- [ ] Remove old containers when the new one gets build for a PR?<br />
-      Or rely on a general weekly untagged cleanup?
-- [ ] Remove PR containers when PR closed<br />
+This crate was forked from https://github.com/manorom/reverse-proxy-service, & the name was changed so a new crate could be published
 
 ## License
 
-MIT, see [LICENSE](./LICENSE)
+MIT OR Apache-2.0, see [LICENSE-MIT](./LICENSE-MIT) OR [LICENSE-Apache-2.0](./LICENSE-Apache-2.0)
 
-`SPDX-License-Identifier: MIT`
+`SPDX-License-Identifier: MIT OR Apache-2.0`

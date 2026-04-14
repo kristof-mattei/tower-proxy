@@ -5,31 +5,31 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug executable 'rust-seed'",
+            "name": "Debug executable 'tower-proxy'",
             "type": "lldb",
             "request": "launch",
             "cargo": {
-                "args": ["run", "--bin=rust-seed"]
+                "args": ["run", "--bin=tower-proxy"]
             },
             "args": [],
             "env": {
                 "RUST_BACKTRACE": "1",
-                "RUST_LOG": "DEBUG,rust_seed=TRACE"
+                "RUST_LOG": "DEBUG,tower_proxy=TRACE"
             },
             "internalConsoleOptions": "neverOpen",
             "terminal": "integrated"
         },
         {
-            "name": "Debug unit tests in executable 'rust-seed'",
+            "name": "Debug unit tests in executable 'tower-proxy'",
             "type": "lldb",
             "request": "launch",
             "cargo": {
-                "args": ["test", "--no-run", "--bin=rust-seed"]
+                "args": ["test", "--no-run", "--bin=tower-proxy"]
             },
             "args": [],
             "env": {
                 "RUST_BACKTRACE": "1",
-                "RUST_LOG": "DEBUG,rust_seed=TRACE"
+                "RUST_LOG": "DEBUG,tower_proxy=TRACE"
             },
             "internalConsoleOptions": "neverOpen",
             "terminal": "integrated"
@@ -44,7 +44,7 @@
             "args": [],
             "env": {
                 "RUST_BACKTRACE": "1",
-                "RUST_LOG": "DEBUG,rust_seed=TRACE"
+                "RUST_LOG": "DEBUG,tower_proxy=TRACE"
             },
             "internalConsoleOptions": "neverOpen",
             "terminal": "integrated"

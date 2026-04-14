@@ -6,5 +6,5 @@
 !/build-scripts
 !/Cargo.lock
 !/Cargo.toml
-!/crates
+!/src
 !/version-bump.patch

@@ -7,7 +7,8 @@ docker:
   - Dockerfile
 rust:
   - *shared
-  - "**/*.toml"
   - ".cargo/**"
-  - "crates/**"
+  - "**/*.toml"
+  - "src/**"
+  - "tests/**"
   - Cargo.lock

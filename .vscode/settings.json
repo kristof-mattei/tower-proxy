@@ -9,7 +9,7 @@
     "rust-analyzer.cargo.features": [],
     "rust-analyzer.runnables.extraEnv": {
         // "RUSTC_BOOTSTRAP": "1",
-        "RUST_LOG": "DEBUG,rust_seed=TRACE"
+        "RUST_LOG": "DEBUG,tower_proxy=TRACE"
     },
     "rust-analyzer.rustfmt.extraArgs": ["+nightly"],
     "rust-analyzer.server.extraEnv": {}

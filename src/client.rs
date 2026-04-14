@@ -1,0 +1,147 @@
+#![cfg_attr(
+    not(any(feature = "https", feature = "nativetls", feature = "__rustls")),
+    doc = "Includes helper functions to build [`Client`]s, and some re-exports from [`hyper_util::client::legacy`]."
+)]
+#![cfg_attr(
+    all(
+        any(feature = "https", feature = "nativetls"),
+        not(feature = "__rustls")
+    ),
+    doc = "Includes helper functions to build [`Client`]s, and some re-exports from [`hyper_util::client::legacy`] or [`hyper_tls`]."
+)]
+#![cfg_attr(
+    all(
+        feature = "__rustls",
+        not(any(feature = "https", feature = "nativetls"))
+    ),
+    doc = "Includes helper functions to build [`Client`]s, and some re-exports from [`hyper_util::client::legacy`] or [`hyper_rustls`]."
+)]
+#![cfg_attr(
+    all(any(feature = "https", feature = "nativetls"), feature = "__rustls"),
+    doc = "Includes helper functions to build [`Client`]s, and some re-exports from [`hyper_util::client::legacy`], [`hyper_tls`], or [`hyper_rustls`]."
+)]
+//!
+use hyper::body::Body as HttpBody;
+#[cfg(feature = "__rustls")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rustls")))]
+pub use hyper_rustls::HttpsConnector as RustlsConnector;
+#[cfg(feature = "https")]
+#[cfg_attr(docsrs, doc(cfg(feature = "https")))]
+pub use hyper_tls::HttpsConnector;
+#[cfg(feature = "nativetls")]
+#[cfg_attr(docsrs, doc(cfg(feature = "nativetls")))]
+pub use hyper_tls::HttpsConnector as NativeTlsConnector;
+use hyper_util::client::legacy::connect::Connect;
+pub use hyper_util::client::legacy::connect::HttpConnector;
+pub use hyper_util::client::legacy::{Builder, Client};
+
+/// Default [`Builder`].
+#[must_use]
+pub fn builder() -> Builder {
+    Builder::new(hyper_util::rt::TokioExecutor::new())
+}
+
+/// With the default [`hyper_util::client::legacy::connect::HttpConnector`].
+#[must_use]
+pub fn http_default<B>() -> Client<HttpConnector, B>
+where
+    B: HttpBody + Send,
+    B::Data: Send,
+{
+    Builder::new(hyper_util::rt::TokioExecutor::new()).build_http()
+}
+
+/// Alias to [`nativetls_default()`].
+#[cfg(any(feature = "https", feature = "nativetls"))]
+#[cfg_attr(docsrs, doc(cfg(any(feature = "https", feature = "nativetls"))))]
+#[inline]
+#[must_use]
+pub fn https_default<B>() -> Client<NativeTlsConnector<HttpConnector>, B>
+where
+    B: HttpBody + Send,
+    B::Data: Send,
+{
+    nativetls_default()
+}
+
+/// With the default [`hyper_tls::HttpsConnector`].
+#[cfg(feature = "nativetls")]
+#[cfg_attr(docsrs, doc(cfg(feature = "nativetls")))]
+#[must_use]
+pub fn nativetls_default<B>() -> Client<NativeTlsConnector<HttpConnector>, B>
+where
+    B: HttpBody + Send,
+    B::Data: Send,
+{
+    Builder::new(hyper_util::rt::TokioExecutor::new()).build(NativeTlsConnector::new())
+}
+
+/// With the default [`hyper_rustls::HttpsConnector`].
+///
+/// The config is determined as follows. I think the cert root is similar to the `reqwest` crate.
+///
+/// 1. Cert roots
+///
+/// - if the feature `rustls-webpki-roots` is enabled, then use
+///   [`HttpsConnectorBuilder::with_webpki_roots()`](hyper_rustls::HttpsConnectorBuilder::with_webpki_roots());
+/// - if `rustls-webpki-roots` is disabled and `rustls-native-roots` enabled, then
+///   [`HttpsConnectorBuilder::with_native_roots()`](hyper_rustls::HttpsConnectorBuilder::with_native_roots());
+/// - otherwise compilation fails.
+///
+/// The feature `rustls` is equivalent to `rustls-webpki-roots`.
+///
+/// 2. Scheme
+///
+/// HTTPS only.
+///
+/// 3. HTTP version
+///
+/// - if the feature `http1` is enabled, then call
+///   [`HttpsConnectorBuilder::enable_http1()`](hyper_rustls::HttpsConnectorBuilder::enable_http1());
+/// - if the feature `rustls-http2` is enabled, then call
+///   [`HttpsConnectorBuilder::enable_http2()`](hyper_rustls::HttpsConnectorBuilder::enable_http2()).
+///
+/// This is not exclusive: if both features are enabled, then both methods are called.
+///
+#[cfg(feature = "__rustls")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rustls")))]
+#[must_use]
+pub fn rustls_default<B>() -> Client<RustlsConnector<HttpConnector>, B>
+where
+    B: HttpBody + Send,
+    B::Data: Send,
+{
+    let conn = hyper_rustls::HttpsConnectorBuilder::new();
+    #[cfg(all(
+        any(feature = "rustls-ring", feature = "rustls-aws-lc"),
+        feature = "rustls-webpki-roots"
+    ))]
+    let conn = conn.with_webpki_roots();
+    #[cfg(all(
+        any(feature = "rustls-ring", feature = "rustls-aws-lc"),
+        all(not(feature = "rustls-webpki-roots"), feature = "rustls-native-roots")
+    ))]
+    let conn = conn
+        .with_native_roots()
+        .expect("no native root CA certificates found");
+    #[cfg(all(
+        any(feature = "rustls-ring", feature = "rustls-aws-lc"),
+        any(feature = "rustls-webpki-roots", feature = "rustls-native-roots")
+    ))]
+    let conn = conn.https_only();
+    #[cfg(feature = "http1")]
+    let conn = conn.enable_http1();
+    #[cfg(feature = "rustls-http2")]
+    let conn = conn.enable_http2();
+    Builder::new(hyper_util::rt::TokioExecutor::new()).build(conn.build())
+}
+
+/// Default builder and given connector.
+pub fn with_connector_default<C, B>(conn: C) -> Client<C, B>
+where
+    C: Connect + Clone,
+    B: HttpBody + Send,
+    B::Data: Send,
+{
+    Builder::new(hyper_util::rt::TokioExecutor::new()).build(conn)
+}

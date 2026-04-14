@@ -2,8 +2,8 @@
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "extends": [
         "github>kristof-mattei/renovate-config",
-        "github>kristof-mattei/renovate-config//github-actions/nonSemver",
-        "github>kristof-mattei/renovate-config//rust/updateRustVersionInCargoToml",
-        "github>kristof-mattei/renovate-config//rust/updateChannelInRustToolchainToml"
-    ]
+        "local>kristof-mattei/tower-proxy//renovate-dont-update-cargo",
+        "github>kristof-mattei/renovate-config//github-actions/nonSemver"
+    ],
+    "forkProcessing": "enabled"
 }

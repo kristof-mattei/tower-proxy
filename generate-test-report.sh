@@ -24,7 +24,7 @@ grcov $(find . -name "profile-*.profraw" -print) \
     --excl-line "(#\\[derive\\()|(^\s*.await[;,]?$)" \
     --excl-start "mod tests \{" \
     --ignore-not-existing \
-    --keep-only "crates/**" \
+    --keep-only "src/**" \
     --llvm \
     --output-path ./reports/ \
     --output-type lcov,html,markdown \

@@ -11,7 +11,7 @@ keywords = ["http", "tower", "axum", "reverse", "proxy"]
 repository = "https://github.com/kristof-mattei/tower-proxy"
 documentation = "https://docs.rs/tower-proxy"
 readme = "README.md"
-include = ["src/**", "/LICENSE", "/LICENSE-*"]
+include = ["examples/**", "src/**", "/LICENSE", "/LICENSE-*"]
 
 [features]
 default = ["http1"]

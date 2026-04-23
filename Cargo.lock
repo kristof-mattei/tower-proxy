@@ -784,9 +784,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "52ff2c0fe9bc6cb6b14a0592c2ff4fa9ceb83eea9db979b0487cd054946a2b8f"
 
 [[package]]
+<<<<<<< HEAD
 name = "linux-raw-sys"
 version = "0.12.1"
+||||||| 553888a
+name = "libmimalloc-sys"
+version = "0.1.46"
+=======
+name = "libmimalloc-sys"
+version = "0.1.47"
+>>>>>>> upstream/main
 source = "registry+https://github.com/rust-lang/crates.io-index"
+<<<<<<< HEAD
 checksum = "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53"
 
 [[package]]
@@ -800,6 +809,11 @@ name = "lock_api"
 version = "0.4.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "224399e74b87b5f3557511d98dff8b14089b3dadafcab6bb93eab67d3aace965"
+||||||| 553888a
+checksum = "bc89deee4af0429081d2a518c0431ae068222a5a262a3bc6ff4d8535ec2e02fe"
+=======
+checksum = "2d1eacfa31c33ec25e873c136ba5669f00f9866d0688bea7be4d3f7e43067df6"
+>>>>>>> upstream/main
 dependencies = [
  "scopeguard",
 ]
@@ -829,9 +843,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8ca58f447f06ed17d5fc4043ce1b10dd205e060fb3ce5b979b8ed8e59ff3f79"
 
 [[package]]
+<<<<<<< HEAD
 name = "mime"
 version = "0.3.17"
+||||||| 553888a
+name = "mimalloc"
+version = "0.1.49"
+=======
+name = "mimalloc"
+version = "0.1.50"
+>>>>>>> upstream/main
 source = "registry+https://github.com/rust-lang/crates.io-index"
+<<<<<<< HEAD
 checksum = "6877bb514081ee2a7ff5ef9de3281f14a4dd4bceac4c09388074a6b5df8a139a"
 
 [[package]]
@@ -839,6 +862,11 @@ name = "mio"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "50b7e5b27aa02a74bac8c3f23f448f8d87ff11f92d3aac1a6ed369ee08cc56c1"
+||||||| 553888a
+checksum = "aca3c01a711f395b4257b81674c0e90e8dd1f1e62c4b7db45f684cc7a4fcb18a"
+=======
+checksum = "b3627c4272df786b9260cabaa46aec1d59c93ede723d4c3ef646c503816b0640"
+>>>>>>> upstream/main
 dependencies = [
  "libc",
  "wasi",

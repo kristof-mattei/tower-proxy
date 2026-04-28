@@ -1,4 +1,22 @@
 <!-- header goes here -->
+## [0.9.0](https://github.com/kristof-mattei/tower-proxy/compare/v0.8.0..v0.9.0) - 2026-04-28
+
+### 🚀 Features
+
+- Checkbox to allow for auto-merging a release PR by [@kristof-mattei](https://github.com/kristof-mattei) ([`8b67c89`](https://github.com/kristof-mattei/tower-proxy/commit/8b67c89b30a8d6b3d4822110734fa4497caabe28))
+
+### 🐛 Bug Fixes
+
+- *(deps)* `mimalloc` by default now is v3, removing flag by [@kristof-mattei](https://github.com/kristof-mattei) ([`c0fdb8a`](https://github.com/kristof-mattei/tower-proxy/commit/c0fdb8aa5fae0dd08bcfb2441388bd458dd23a0c))
+- *(deps)* Update rust crate mimalloc to 0.1.50 by [@renovate[bot]](https://github.com/renovate[bot]) ([`f488e9c`](https://github.com/kristof-mattei/tower-proxy/commit/f488e9c023782304221631029603e77be7779648))
+- Add examples by [@kristof-mattei](https://github.com/kristof-mattei) ([`55a5292`](https://github.com/kristof-mattei/tower-proxy/commit/55a5292ca689ed6e0104979b5c538e5f05fd26ac))
+- Disable plugins by [@kristof-mattei](https://github.com/kristof-mattei) ([`3725751`](https://github.com/kristof-mattei/tower-proxy/commit/37257510cce405e0426a57c6e76ec53d73454c91))
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* Link in release proposal now points to sha as tag doesn't exist yet by [@kristof-mattei](https://github.com/kristof-mattei) ([`f2bcfc8`](https://github.com/kristof-mattei/tower-proxy/commit/f2bcfc8ed61488c9863b26533432becd6e7267df))
+- Move to keep track by [@kristof-mattei](https://github.com/kristof-mattei) ([`ecfe637`](https://github.com/kristof-mattei/tower-proxy/commit/ecfe6378af14113223b780440687308c1f2baa0c))
+- Restore by [@kristof-mattei](https://github.com/kristof-mattei) ([`fc7f1ff`](https://github.com/kristof-mattei/tower-proxy/commit/fc7f1ff4756e31778ddd535c594c7018acc89744))
 ## [0.8.0] - 2026-04-15
 
 ### 🚀 Features

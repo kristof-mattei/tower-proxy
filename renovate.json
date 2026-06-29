@@ -5,5 +5,11 @@
         "local>kristof-mattei/tower-proxy//renovate-dont-update-cargo",
         "github>kristof-mattei/renovate-config//github-actions/nonSemver"
     ],
-    "forkProcessing": "enabled"
+    "forkProcessing": "enabled",
+    "packageRules": [
+        {
+            "matchManagers": ["cargo"],
+            "rangeStrategy": "update-lockfile"
+        }
+    ]
 }

@@ -478,9 +478,22 @@ jobs:
         run: |
           source="docker://${{ needs.docker-prepare-variables.outputs.full_image_name_local_registry }}:${{ needs.docker-prepare-variables.outputs.unique_tag }}"
 
+          # to track pending uploads
+          pids=()
+
           while IFS= read -r tag; do
-            skopeo copy --all --preserve-digests --src-tls-verify=false --command-timeout 70s --retry-times 5 "${source}" "docker://${tag}"
+            skopeo copy --all --preserve-digests --src-tls-verify=false --command-timeout 70s --retry-times 5 "${source}" "docker://${tag}" &
+            pids+=("$!")
           done <<< "${{ steps.meta.outputs.tags }}"
+
+          exit_code=0
+
+          for pid in "${pids[@]}"; do
+            # try to upload all of them, if one of them fails, upload the other ones and fail
+            wait "${pid}" || exit_code=1
+          done
+
+          exit "${exit_code}"
 
       - name: Inspect new remote tags
         shell: bash

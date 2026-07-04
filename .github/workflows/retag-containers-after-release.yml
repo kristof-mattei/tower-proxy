@@ -160,7 +160,7 @@ jobs:
           push-to-registry: true
 
       - name: Docker Scout (linux/amd64)
-        uses: docker/scout-action@ce97ec1bb85613e8eb35d086fad0c77a6cedf983 # v1.23.0
+        uses: docker/scout-action@2688993af7bafd6ba8c6a74ec652442be91dd82b # v1.23.1
         with:
           command: cves
           image: "${{ env.FULL_IMAGE_NAME }}@${{ steps.digest.outputs.digest }}"
@@ -169,7 +169,7 @@ jobs:
           dockerhub-password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Docker Scout (linux/arm64)
-        uses: docker/scout-action@ce97ec1bb85613e8eb35d086fad0c77a6cedf983 # v1.23.0
+        uses: docker/scout-action@2688993af7bafd6ba8c6a74ec652442be91dd82b # v1.23.1
         with:
           command: cves
           image: "${{ env.FULL_IMAGE_NAME }}@${{ steps.digest.outputs.digest }}"

@@ -513,6 +513,7 @@ jobs:
     permissions:
       artifact-metadata: write
       attestations: write
+      contents: read
       id-token: write
       packages: write
       pull-requests: write
@@ -544,6 +545,7 @@ jobs:
           registry: ${{ needs.docker-prepare-variables.outputs.registry }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       # note that we use the digest of the local image
       # these digests don't change after pushing, but
       # since we deal with tags (mutable), and the way to get a digest is to use the tag, I prefer

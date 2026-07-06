@@ -77,10 +77,24 @@ jobs:
 
       - name: Install custom cargo-spellcheck
         run: |
-          cargo binstall cargo-spellcheck@0.15.6 \
+          attempt=0
+
+          until cargo binstall cargo-spellcheck@0.15.6 \
             --no-confirm \
+            --disable-strategies compile \
             --pkg-fmt bin \
-            --pkg-url "https://github.com/kristof-mattei/cargo-spellcheck/releases/download/v{ version }/{ name }-v{ version }-{ target }"
+            --pkg-url "https://github.com/kristof-mattei/cargo-spellcheck/releases/download/v{ version }/{ name }-v{ version }-{ target }"; do
+            attempt=$((attempt + 1))
+
+            if [ "${attempt}" -ge 5 ]; then
+              echo "cargo binstall failed after ${attempt} attempts, giving up..."
+              exit 1
+            fi
+
+            echo "cargo binstall failed, trying again..."
+
+            sleep 2
+          done
 
       - name: Run cargo-spellcheck
         run: |

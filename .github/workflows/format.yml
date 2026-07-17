@@ -9,6 +9,9 @@ on:
 permissions:
   contents: read
 
+env:
+  NPM_CONFIG_FUND: false
+
 jobs:
   format:
     name: Format

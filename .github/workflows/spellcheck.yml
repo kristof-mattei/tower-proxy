@@ -15,6 +15,9 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  NPM_CONFIG_FUND: false
+
 jobs:
   spellcheck:
     name: Spellcheck
@@ -27,43 +30,26 @@ jobs:
           show-progress: false
 
       - name: Make sure dictionary words are sorted and unique
+        shell: bash
         run: |
-          FILE="spellcheck.dic"
+          FILE="project-words.txt"
 
-          # Verify the first line is an integer.
-          first_line=$(head -n 1 "$FILE")
-          if ! [[ "$first_line" =~ ^[0-9]+$ ]]; then
-            echo "Error: The first line of $FILE must be an integer, but got: '$first_line'"
-            exit 1
-          fi
-          expected_count="$first_line"
-
-          # Check that the number of lines matches the integer.
-          # xargs (with no arguments) will strip leading/trailing whitespace from wc's output.
-          actual_count=$(sed '1d' "$FILE" | wc -l | xargs)
-          if [ "$expected_count" -ne "$actual_count" ]; then
-            echo "Error: The number of lines ($actual_count) does not match $expected_count."
-            exit 1
-          fi
-
-          # `sed` removes the first line (number of words).
-          #
-          # `sort` makes sure everything in between is sorted
-          # and contains no duplicates.
+          # `sort` makes sure the words are sorted and contain no duplicates.
           #
           # Since `sort` is sensitive to locale, we set it
           # using LC_ALL to en_US.UTF8 to be consistent in different
           # environments.
 
           (
-            sed '1d' "$FILE" | LC_ALL=en_US.UTF8 sort -uc
+            LC_ALL=en_US.UTF8 sort --check --unique "$FILE"
           ) || {
             echo "Dictionary is not in sorted order. Correct order is:"
-            LC_ALL=en_US.UTF8 sort -u <(sed '1d' "$FILE")
+            LC_ALL=en_US.UTF8 sort --unique "$FILE"
             false
           }
 
       - name: Detect trailing whitespace
+        shell: bash
         run: |
           if grep --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=target --binary-files=without-match --recursive --line-number --regexp='\s$' .
           then
@@ -72,39 +58,28 @@ jobs:
               exit 1
           fi
 
-      - name: Set up binstall
-        uses: cargo-bins/cargo-binstall@ead08b90bd7b2e6d81963fb9cf0b7239f66d5db4 # v1.21.0
+      - name: Install pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
 
-      - name: Install custom cargo-spellcheck
+      - name: Set up node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: package.json
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        shell: bash
         run: |
-          attempt=0
+          pnpm install --frozen-lockfile
 
-          until cargo binstall cargo-spellcheck@0.15.6 \
-            --no-confirm \
-            --disable-strategies compile \
-            --pkg-fmt bin \
-            --pkg-url "https://github.com/kristof-mattei/cargo-spellcheck/releases/download/v{ version }/{ name }-v{ version }-{ target }"; do
-            attempt=$((attempt + 1))
-
-            if [ "${attempt}" -ge 5 ]; then
-              echo "cargo binstall failed after ${attempt} attempts, giving up..."
-              exit 1
-            fi
-
-            echo "cargo binstall failed, trying again..."
-
-            sleep 2
-          done
-
-      - name: Run cargo-spellcheck
+      - name: Run cspell
+        shell: bash
         run: |
-          if ! cargo spellcheck --code 1
+          if ! pnpm spellcheck
           then
               echo ''
               echo ''
-              echo 'If this is a Rust method/type/variable name, then you should'
-              echo 'enclose it in backticks like this: `MyRustType`.'
-              echo ''
-              echo 'If this is a real word, then you can add it to spellcheck.dic'
+              echo 'If this is a real word, then you can add it to project-words.txt'
               exit 1
           fi

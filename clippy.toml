@@ -28,8 +28,8 @@ disallowed-methods = [
 ]
 disallowed-names = ["bar", "baz", "e", "err", "foo", "ok", "quux"]
 disallowed-types = [
-    { path = "std::collections::HashMap", replacement = "hashbrown::HashMap", reason = "The standard library version sacrificies performance for HashDos resistance, which should be chosen explicitly" },
-    { path = "std::collections::HashSet", replacement = "hashbrown::HashSet", reason = "The standard library version sacrificies performance for HashDos resistance, which should be chosen explicitly" },
+    { path = "std::collections::HashMap", replacement = "hashbrown::HashMap", reason = "The standard library version sacrifices performance for HashDos resistance, which should be chosen explicitly" },
+    { path = "std::collections::HashSet", replacement = "hashbrown::HashSet", reason = "The standard library version sacrifices performance for HashDos resistance, which should be chosen explicitly" },
 ]
 enforced-import-renames = [
     { path = "serde_json::from_slice", rename = "from_json_slice" },

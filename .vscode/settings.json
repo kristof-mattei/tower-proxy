@@ -2,7 +2,7 @@
     "debug.internalConsoleOptions": "neverOpen",
     "lldb.launch.expressions": "simple",
     "lldb.launch.terminal": "integrated",
-    "prettier.configPath": "./prettier.config.mjs",
+    "prettier.configPath": "./prettier.config.ts",
     "rust-analyzer.cargo.extraEnv": {
         // "RUSTC_BOOTSTRAP": "1"
     },

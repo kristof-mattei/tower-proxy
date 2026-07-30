@@ -20,7 +20,7 @@ on:
 
 concurrency:
   group: "${{ github.workflow }}-${{ inputs.prerelease }}"
-  cancel-in-progress: true # only last step is important, which runs or doesn't
+  cancel-in-progress: false # this job force-pushes branches and opens PRs, let it finish
 
 permissions:
   contents: write # to create branches
@@ -58,10 +58,13 @@ jobs:
       - name: Compute version, generate changelog, create branch and open PR
         shell: bash
         id: release
+        env:
+          # GITHUB_TOKEN attributes the API commit to github-actions[bot].
+          # But we push the branch using the checkout PAT so workflows trigger.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # git-cliff reads GITHUB_TOKEN from the environment
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config --global user.name github-actions[bot]
-          git config --global user.email 41898282+github-actions[bot]@users.noreply.github.com
-
           latest_tag=$(git describe --tags --abbrev=0 || true)
 
           prerelease="${{ inputs.prerelease }}"
@@ -97,13 +100,13 @@ jobs:
           fi
 
           bump_flag="auto"
-          bumped=$(git-cliff --bumped-version --bump ${bump_flag} --unreleased --github-token ${{ secrets.GITHUB_TOKEN }})
+          bumped=$(git-cliff --bumped-version --bump ${bump_flag} --unreleased)
 
           # If git-cliff didn't bump (e.g. chore/ci only commits), force a patch increment
           # so we never release the same version as the last tag.
           if [ "${bumped}" = "${latest_tag}" ]; then
             bump_flag="patch"
-            bumped=$(git-cliff --bumped-version --bump patch --unreleased --github-token ${{ secrets.GITHUB_TOKEN }})
+            bumped=$(git-cliff --bumped-version --bump patch --unreleased)
             echo "::notice::No conventional bump detected, forcing patch bump"
           fi
 
@@ -140,7 +143,7 @@ jobs:
             latest_pre=$(git tag --list "${version}-${prerelease}.*" | sort --field-separator . --key 4 --numeric-sort | tail -1)
 
             if [ -n "$latest_pre" ]; then
-              pre_number=$(( ${latest_pre##*-${prerelease}.} + 1 ))
+              pre_number=$(( ${latest_pre##*-"${prerelease}".} + 1 ))
             else
               pre_number=1
             fi
@@ -157,29 +160,62 @@ jobs:
           echo "::notice::Branch: ${branch}"
           echo "branch=$branch" >> "${GITHUB_OUTPUT}"
 
-          # Create or reset the branch to current main
-          if git ls-remote --exit-code --heads origin "${branch}" > /dev/null 2>&1; then
-            git checkout -B "${branch}" origin/main
-          else
-            git checkout -b "${branch}"
-          fi
-
           commit_message="chore(release): prepare for ${release_version}"
 
-          git-cliff --output CHANGELOG.md --tag "${release_version}" --github-token ${{ secrets.GITHUB_TOKEN }}
+          git-cliff --output CHANGELOG.md --tag "${release_version}"
 
-          git add CHANGELOG.md
+          main_sha=$(git rev-parse HEAD)
 
-          git commit --message "${commit_message}"
+          # Stage the commit on a scratch branch so the release branch moves
+          # only once, straight to the finished commit
+          staging_branch="${branch}-staging"
 
-          git push --set-upstream origin "${branch}" --force
+          git push --force origin "${main_sha}:refs/heads/${staging_branch}"
+
+          # Commit via createCommitOnBranch. Commits created via the API are signed by GitHub.
+          base64 --wrap=0 CHANGELOG.md > changelog.base64
+
+          query=$(cat <<'GRAPHQL'
+            mutation ($repositoryNameWithOwner: String!, $branchName: String!, $expectedHeadOid: GitObjectID!, $headline: String!, $contents: Base64String!) {
+              createCommitOnBranch(
+                input: {
+                  branch: { repositoryNameWithOwner: $repositoryNameWithOwner, branchName: $branchName }
+                  expectedHeadOid: $expectedHeadOid
+                  message: { headline: $headline }
+                  fileChanges: { additions: [{ path: "CHANGELOG.md", contents: $contents }] }
+                }
+              ) {
+                commit {
+                  oid
+                }
+              }
+            }
+          GRAPHQL
+          )
+
+          release_sha=$(gh api graphql \
+            --raw-field query="${query}" \
+            --raw-field repositoryNameWithOwner="${GITHUB_REPOSITORY}" \
+            --raw-field branchName="${staging_branch}" \
+            --raw-field expectedHeadOid="${main_sha}" \
+            --raw-field headline="${commit_message}" \
+            --field contents=@changelog.base64 \
+            --jq '.data.createCommitOnBranch.commit.oid')
+
+          echo "::notice::Release commit: ${release_sha}"
+
+          # The commit only exists server-side, fetch it so we can push its SHA
+          git fetch origin "refs/heads/${staging_branch}"
+
+          # Create or reset the release branch to the signed commit
+          git push --force origin "${release_sha}:refs/heads/${branch}"
+
+          git push origin --delete "${staging_branch}"
 
           # Build the PR-body changelog from a context whose compare-link target
           # is the release-branch head SHA, because the ${release_version} tag
           # doesn't exist until after this PR is merged.
-          release_sha=$(git rev-parse HEAD)
-
-          git-cliff --context --unreleased --tag "${release_version}" --github-token ${{ secrets.GITHUB_TOKEN }} \
+          git-cliff --context --unreleased --tag "${release_version}" \
             | jq --arg sha "${release_sha}" '.[0].extra = {compare_to: $sha}' \
             > diff-context.json
 
@@ -221,4 +257,22 @@ jobs:
 
           if [ "${{ inputs.auto_merge }}" = "true" ]; then
             gh pr merge "${branch}" --auto --merge
+          fi
+
+      - name: Clean up stranded branches
+        if: ${{ (failure() || cancelled()) && steps.release.outputs.branch != '' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          branch="${{ steps.release.outputs.branch }}"
+
+          git push origin --delete "${branch}-staging" || true
+
+          # Deleting the release branch would close its PR, so keep it when one exists.
+          # A failing `gh pr list` fails the step (set -e) instead of counting as "no PR".
+          open_pr=$(gh pr list --head "${branch}" --state open --json number --jq '.[0].number // empty')
+
+          if [ -z "${open_pr}" ]; then
+            git push origin --delete "${branch}" || true
           fi

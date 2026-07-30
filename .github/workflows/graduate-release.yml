@@ -51,17 +51,21 @@ jobs:
       - name: Create tag
         shell: bash
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.release.outputs.tag }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
         run: |
           if git ls-remote --tags origin "refs/tags/${TAG}" | grep --quiet "refs/tags/${TAG}$"; then
             echo "Tag ${TAG} already exists remotely, skipping creation"
           else
-            git config --global user.name github-actions[bot]
-            git config --global user.email 41898282+github-actions[bot]@users.noreply.github.com
-
-            git tag "${TAG}" --message "chore(release): Release ${TAG}"
-            git push origin "${TAG}"
+            # lightweight tag: no tag object, just a ref to the already-signed merge commit
+            gh api --method POST "repos/${GITHUB_REPOSITORY}/git/refs" \
+              --raw-field ref="refs/tags/${TAG}" \
+              --raw-field sha="${MERGE_SHA}"
           fi
+
+          # fetch the one we just created
+          git fetch origin "refs/tags/${TAG}:refs/tags/${TAG}"
 
       - name: Check if release exists
         id: check_release
@@ -109,16 +113,19 @@ jobs:
             mv release-notes-truncated.md release-notes.md
           fi
 
-          prerelease_flag=""
+          release_args=()
           if [ "${PRERELEASE}" == "true" ]; then
-            prerelease_flag="--prerelease"
+            # prereleases cannot be set as latest
+            release_args+=(--prerelease)
+          else
+            release_args+=(--latest)
           fi
 
           gh release create "${TAG}" \
             --notes-file release-notes.md \
             --title "${TAG}" \
             --verify-tag \
-            ${prerelease_flag}
+            "${release_args[@]}"
 
       - name: Close stale release PRs
         if: steps.check_release.outputs.exists == 'false'

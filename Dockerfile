@@ -15,7 +15,18 @@ RUN apt-get update \
     && apt-get install --no-install-recommends --yes \
         build-essential \
         musl-dev \
-        patch
+        patch \
+        xz-utils
+
+# trixie packages cargo-auditable 0.6.6, which predates the bare-linker (-Clinker=rust-lld) fixes from 0.7.3
+ADD --checksum=sha256:3374daaf153e6f82028add5e4bf7cc2deab46537dee24f20be80df831193aeb4 https://github.com/rust-secure-code/cargo-auditable/releases/download/v0.7.5/cargo-auditable-x86_64-unknown-linux-musl.tar.xz /tmp/cargo-auditable-x86_64.tar.xz
+ADD --checksum=sha256:35d90cee9648037eaa4c1a2649fdca9d1b9a9997b972d37be7f8629139ba1294 https://github.com/rust-secure-code/cargo-auditable/releases/download/v0.7.5/cargo-auditable-aarch64-unknown-linux-musl.tar.xz /tmp/cargo-auditable-aarch64.tar.xz
+
+RUN tar --extract --xz --no-same-owner --strip-components 1 \
+        --directory /usr/local/cargo/bin \
+        --file "/tmp/cargo-auditable-$(uname --machine).tar.xz" \
+        "cargo-auditable-$(uname --machine)-unknown-linux-musl/cargo-auditable" \
+    && rm /tmp/cargo-auditable-*.tar.xz
 
 FROM rust-base AS rust-linux-amd64
 ARG TARGET=x86_64-unknown-linux-musl

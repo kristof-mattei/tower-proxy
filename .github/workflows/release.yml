@@ -245,8 +245,10 @@ jobs:
           existing_pr=$(gh pr list --head "${branch}" --state open --json number --jq '.[0].number // empty')
 
           if [ -n "$existing_pr" ]; then
-            gh pr edit "$existing_pr" \
-              --body-file diff-CHANGELOG.md
+            # gh pr edit needs read:org, even for --body (cli/cli#13575).
+            # The REST PATCH works with just the repo scope.
+            gh api --method PATCH --silent "repos/${GITHUB_REPOSITORY}/pulls/${existing_pr}" \
+              --field body=@diff-CHANGELOG.md
           else
             gh pr create \
               --base main \

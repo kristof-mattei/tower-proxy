@@ -11,6 +11,7 @@ dry_run=false
 skip_confirmation=false
 cleanup_pr_images=true
 pr_image_age_days=30
+untagged_grace_days=1
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -51,16 +52,21 @@ while [[ $# -gt 0 ]]; do
             pr_image_age_days="$2"
             shift 2
             ;;
+        --untagged-grace-days)
+            untagged_grace_days="$2"
+            shift 2
+            ;;
         --help)
-            echo "Usage: $0 [--org ORG | --user USER] [--package PACKAGE_NAME] [--dry-run] [--yes] [--skip-pr-cleanup] [--pr-age-days DAYS] [--help]"
-            echo "  --org              GitHub organization name"
-            echo "  --user             GitHub username"
-            echo "  --package          Package name (default: $package_name)"
-            echo "  --dry-run          Show what would be deleted without actually deleting"
-            echo "  --yes              Skip confirmation prompt"
-            echo "  --skip-pr-cleanup  Skip cleanup of old PR images"
-            echo "  --pr-age-days      Age in days for PR images to be considered old (default: $pr_image_age_days)"
-            echo "  --help             Show this help message"
+            echo "Usage: $0 [--org ORG | --user USER] [--package PACKAGE_NAME] [--dry-run] [--yes] [--skip-pr-cleanup] [--pr-age-days DAYS] [--untagged-grace-days DAYS] [--help]"
+            echo "  --org                   GitHub organization name"
+            echo "  --user                  GitHub username"
+            echo "  --package               Package name (default: $package_name)"
+            echo "  --dry-run               Show what would be deleted without actually deleting"
+            echo "  --yes                   Skip confirmation prompt"
+            echo "  --skip-pr-cleanup       Skip cleanup of old PR images"
+            echo "  --pr-age-days           Age in days for PR images to be considered old (default: $pr_image_age_days)"
+            echo "  --untagged-grace-days   Age in days before untagged versions are deleted (default: $untagged_grace_days)"
+            echo "  --help                  Show this help message"
             echo ""
             echo "Note: --org and --user are mutually exclusive. One must be specified."
             echo "Note: Images with the 'edge' or 'latest' tag will never be deleted."
@@ -355,8 +361,14 @@ for version_id in "${all_version_ids[@]}"; do
     fi
 
     # Check for untagged versions
+    # A concurrent push uploads child manifests before the tagged index, so
+    # recent untagged versions may belong to an image that is still being pushed
     if echo "$tags" | jq --exit-status '. == []' > /dev/null 2>&1; then
-        delete_candidates["$version_id"]="untagged"
+        if is_older_than_days "$created_at" "$untagged_grace_days"; then
+            delete_candidates["$version_id"]="untagged"
+        else
+            protected_versions["$version_id"]="untagged, younger than $untagged_grace_days day(s)"
+        fi
         continue
     fi
 

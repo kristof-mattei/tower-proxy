@@ -129,14 +129,14 @@ jobs:
           repo="${{ github.repository }}"
           repo_lower="${repo,,}"
 
-          all_tags=$(gh api /users/${{ github.repository_owner }}/packages/container/${repo_lower##*/}/versions \
+          all_tags=$(gh api "/users/${{ github.repository_owner }}/packages/container/${repo_lower##*/}/versions" \
             --paginate \
             --jq '.[] | .metadata.container.tags[]')
 
           # search for the PR tag, there can only be zero or one match
           pr_tag_found=$(echo "${all_tags}" | grep -c "^${{ env.PR_TAG }}\$") || true
 
-          if [ $pr_tag_found -eq 1 ]
+          if [ "${pr_tag_found}" -eq 1 ]
           then
             echo "Incoming PR produced a Docker image"
 
@@ -207,7 +207,7 @@ jobs:
         run: |
           echo "${{ steps.meta-dockerhub.outputs.tags }}" | while IFS= read -r new_tag
             do
-              skopeo copy --all --preserve-digests "docker://${FULL_IMAGE_NAME}:${OLD_TAG}" "docker://${new_tag}"
+              skopeo copy --all --preserve-digests --command-timeout 70s --retry-times 5 "docker://${FULL_IMAGE_NAME}:${OLD_TAG}" "docker://${new_tag}"
           done
 
       - name: Attest Docker Hub image

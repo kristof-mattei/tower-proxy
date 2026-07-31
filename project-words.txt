@@ -10,7 +10,6 @@ cocogitto
 Ctarget
 cves
 docsrs
-dont
 dorny
 endfor
 endmacro
@@ -34,7 +33,6 @@ nextest
 nvmrc
 Oneshot
 pathbuf
-pids
 postprocessors
 prereleased
 profraw

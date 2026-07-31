@@ -52,9 +52,9 @@ jobs:
         name: Set up toolchain
         shell: bash
         run: |
-          rm ${HOME}/.cargo/bin/cargo-fmt
-          rm ${HOME}/.cargo/bin/rust-analyzer
-          rm ${HOME}/.cargo/bin/rustfmt
+          rm "${HOME}/.cargo/bin/cargo-fmt"
+          rm "${HOME}/.cargo/bin/rust-analyzer"
+          rm "${HOME}/.cargo/bin/rustfmt"
 
           rustup self update
           rustup update
@@ -183,7 +183,9 @@ jobs:
       - name: Run grcov
         shell: bash
         run: |
-          grcov $(find . -name "profile-*.profraw" -print) \
+          mapfile -t profraw_files < <(find . -name "profile-*.profraw" -print)
+
+          grcov "${profraw_files[@]}" \
             --binary-path ./target/debug/ \
             --branch \
             --excl-br-line "^\s*((debug_)?assert(_eq|_ne)?!)" \

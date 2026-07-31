@@ -2,14 +2,8 @@
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "extends": [
         "github>kristof-mattei/renovate-config",
-        "github>kristof-mattei/renovate-config//rust/dontUpdateCargo",
+        "github>kristof-mattei/renovate-config//rust/crateUpdatePolicy",
         "github>kristof-mattei/renovate-config//github-actions/nonSemver"
     ],
-    "forkProcessing": "enabled",
-    "packageRules": [
-        {
-            "matchManagers": ["cargo"],
-            "rangeStrategy": "update-lockfile"
-        }
-    ]
+    "forkProcessing": "enabled"
 }

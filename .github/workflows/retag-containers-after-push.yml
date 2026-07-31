@@ -151,7 +151,13 @@ jobs:
             # so we find the last commit that github processed before this one
             # which will have gone through the same retagging process
             # and use that sha as our key to find the Docker container related to that commit
-            old_tag=$(echo "${all_tags}" | grep "^sha-${{ env.BASE_SHA }}-.*\$") # .* is actual or retag
+            old_tag=$(echo "${all_tags}" | grep "^sha-${{ env.BASE_SHA }}-.*\$") || true # .* is actual or retag
+
+            if [ -z "${old_tag}" ]
+            then
+              echo "::error::No matching source tag found for base SHA ${{ env.BASE_SHA }}"
+              exit 1
+            fi
 
             echo "OLD_TAG=${old_tag}" >> "${GITHUB_ENV}"
             echo "SUFFIX=retag" >> "${GITHUB_ENV}"

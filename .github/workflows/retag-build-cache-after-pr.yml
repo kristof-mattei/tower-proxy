@@ -118,7 +118,25 @@ jobs:
           pr_number=""
 
           if [ -n "${parent2}" ]; then
-            pr_number=$(gh api "/repos/${{ github.repository }}/commits/${parent2}/pulls" --jq '.[0].number')
+            pr_found=""
+
+            for attempt in $(seq 1 5); do
+              if ((attempt > 1)); then
+                sleep 5
+              fi
+
+              echo "Looking up the PR for ${parent2} (attempt ${attempt} of 5)"
+
+              if pr_number=$(gh api "/repos/${{ github.repository }}/commits/${parent2}/pulls" --jq '.[0].number'); then
+                pr_found=true
+                break
+              fi
+            done
+
+            if [ -z "${pr_found}" ]; then
+              echo "::error::PR lookup for ${parent2} failed after 5 attempts"
+              exit 1
+            fi
           fi
 
           if [ -z "${pr_number}" ]; then

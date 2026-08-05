@@ -51,7 +51,7 @@ jobs:
       - name: Detect trailing whitespace
         shell: bash
         run: |
-          if grep --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=target --binary-files=without-match --recursive --line-number --regexp='\s$' .
+          if git grep -I --line-number --untracked '[[:space:]]$'
           then
               echo ''
               echo 'Please remove trailing whitespace from these lines.'

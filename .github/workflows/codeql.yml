@@ -19,6 +19,7 @@ jobs:
     name: Analyze (${{ matrix.language }})
     runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
     permissions:
+      actions: read
       contents: read
       # required for all workflows
       security-events: write

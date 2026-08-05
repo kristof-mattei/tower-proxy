@@ -94,7 +94,7 @@ jobs:
         run: |
           for example in examples/*.rs
           do
-            cargo run --example "$(basename "${example%.rs}")" ${{ env.CARGO_FEATURES }} --features="$(cat ${example%.rs}-features)"
+            cargo run --example "$(basename "${example%.rs}")" ${{ env.CARGO_FEATURES }} --features="$(cat "${example%.rs}-features")"
           done
 
   cargo-fmt:

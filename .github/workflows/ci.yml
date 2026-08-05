@@ -607,6 +607,7 @@ jobs:
     # when all upstream success: success
     # combination of upstream skip and success: success
     runs-on: ubuntu-slim
+    permissions: {}
     needs:
       - changes
       - calculate-version

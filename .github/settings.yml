@@ -140,6 +140,8 @@ rulesets:
           strict_required_status_checks_policy: true
           do_not_enforce_on_create: false
           required_status_checks:
+            - context: Actionlint
+              integration_id: 15368
             - context: All done
               integration_id: 15368
             # These time out too much, we just want the information

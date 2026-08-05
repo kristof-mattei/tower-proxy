@@ -5,9 +5,10 @@ barbar
 barfoo
 bkeepers
 buildcache
-Cinstrument
+cinstrument
 cocogitto
-Ctarget
+ctarget
+cttc
 cves
 docsrs
 dorny
@@ -24,6 +25,7 @@ kristof
 lldb
 Masato
 mattei
+mimalloc
 monomorphization
 multiplatform
 mypy
@@ -36,9 +38,10 @@ pathbuf
 postprocessors
 prereleased
 profraw
+pyflakes
 replacen
-Retag
-Retagging
+retag
+retagging
 RUSTDOCFLAGS
 rustflags
 samply
@@ -47,9 +50,9 @@ skopeo
 startswith
 striptags
 taiki
-TARGETPLATFORMDASH
+targetplatformdash
 telem
-Tera
+tera
 topo
 trixie
 uninlined

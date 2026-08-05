@@ -23,9 +23,8 @@ concurrency:
   cancel-in-progress: false # this job force-pushes branches and opens PRs, let it finish
 
 permissions:
-  contents: write # to create branches
-  issues: write
-  pull-requests: write
+  contents: write # to create the release commit via createCommitOnBranch
+  pull-requests: read # to list open release PRs
 
 env:
   CARGO_TERM_COLOR: always

@@ -22,8 +22,9 @@ concurrency:
   cancel-in-progress: false # no we need them
 
 permissions:
+  artifact-metadata: write
   attestations: write
-  contents: write
+  contents: read
   id-token: write
   packages: write
 

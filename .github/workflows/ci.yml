@@ -103,7 +103,6 @@ jobs:
     runs-on: ubuntu-slim
     permissions:
       contents: read
-      pull-requests: read # git-cliff's GitHub integration
     needs:
       - changes
       - repo-has-container
@@ -133,12 +132,12 @@ jobs:
         id: version
         run: |
           latest_tag=$(git describe --tags --abbrev=0 || true)
-          bumped=$(git-cliff --bumped-version --unreleased --github-token ${{ secrets.GITHUB_TOKEN }})
+          bumped=$(git-cliff --bumped-version --unreleased --offline)
 
           # If git-cliff didn't bump (e.g. chore/ci only commits), force a patch increment
           # so we never tag a Docker image with the same version as the last release.
           if [ "${bumped}" = "${latest_tag}" ]; then
-            bumped=$(git-cliff --bumped-version --bump patch --unreleased --github-token ${{ secrets.GITHUB_TOKEN }})
+            bumped=$(git-cliff --bumped-version --bump patch --unreleased --offline)
             echo "Force bumping to ${bumped}"
           fi
 

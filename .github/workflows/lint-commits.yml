@@ -30,12 +30,27 @@ jobs:
           show-progress: false
           fetch-depth: 0
 
-      - name: Install cocogitto to lint commits
+      - name: Enforce strict conventional subjects
+        shell: bash
+        run: |
+          # Enforce '<type>(<scope>)!: <description>' subjects with lowercase type and scope.
+          # Also covers non-merge commits with merge-style messages, which cliff.toml's
+          # ^Merge skip would otherwise exempt from the git-cliff check below.
+          pattern='^[0-9a-f]+ [a-z]+(\([a-z0-9-]+\))?!?: .+$'
+          if git log --no-merges --format="%h %s" "origin/${GITHUB_BASE_REF}..HEAD" | grep --extended-regexp --invert-match "${pattern}"; then
+            echo "The commit(s) above do not match '<type>(<scope>)!: <description>' with a lowercase type and scope"
+            exit 1
+          fi
+
+      - name: Install git-cliff to lint commits
         uses: taiki-e/install-action@7f4eb899022d8fe70b20c4f3de697aa85c309026 # v2.85.11
         with:
-          tool: cocogitto
+          tool: git-cliff
 
       - name: Check the commits
         shell: bash
+        env:
+          GIT_CLIFF__GIT__REQUIRE_CONVENTIONAL: "true"
         run: |
-          cog check --ignore-merge-commits
+          # The range limits linting to this PR's commits, matching the step above
+          git-cliff --offline "origin/${GITHUB_BASE_REF}..HEAD" > /dev/null

@@ -99,13 +99,13 @@ jobs:
           fi
 
           bump_flag="auto"
-          bumped=$(git-cliff --bumped-version --bump ${bump_flag} --unreleased)
+          bumped=$(git-cliff --bumped-version --bump ${bump_flag} --unreleased --offline)
 
           # If git-cliff didn't bump (e.g. chore/ci only commits), force a patch increment
           # so we never release the same version as the last tag.
           if [ "${bumped}" = "${latest_tag}" ]; then
             bump_flag="patch"
-            bumped=$(git-cliff --bumped-version --bump patch --unreleased)
+            bumped=$(git-cliff --bumped-version --bump patch --unreleased --offline)
             echo "::notice::No conventional bump detected, forcing patch bump"
           fi
 
@@ -235,7 +235,7 @@ jobs:
 
           if [ "$file_length" -gt "$max_length" ]; then
             truncated_length=$(( max_length - ${#truncation_message} ))
-            head --bytes="$truncated_length" diff-CHANGELOG.md > diff-CHANGELOG-truncated.md
+            TRUNC="$truncated_length" perl -CSD -0777 -pe '$_ = substr($_, 0, $ENV{TRUNC})' diff-CHANGELOG.md > diff-CHANGELOG-truncated.md
             printf '%s' "$truncation_message" >> diff-CHANGELOG-truncated.md
             mv diff-CHANGELOG-truncated.md diff-CHANGELOG.md
           fi

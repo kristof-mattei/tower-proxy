@@ -7,6 +7,7 @@ org=""
 user=""
 package_name="package"
 per_page=100
+max_api_attempts=3
 dry_run=false
 skip_confirmation=false
 cleanup_pr_images=true
@@ -136,10 +137,30 @@ fi
 
 # ========== UTILITY FUNCTIONS ==========
 
+# Run gh api, retrying transient failures with backoff
+# Only emits stdout of the last attempt, so partial output of failed attempts is discarded
+gh_api() {
+    local attempt output
+    for ((attempt = 1; attempt <= max_api_attempts; attempt++)); do
+        if output=$(gh api "$@"); then
+            printf '%s' "$output"
+            return 0
+        fi
+
+        if [[ "$attempt" -lt "$max_api_attempts" ]]; then
+            echo "Warning: gh api call failed (attempt $attempt of $max_api_attempts), retrying in $((attempt * 2))s..." >&2
+            sleep $((attempt * 2))
+        fi
+    done
+
+    printf '%s' "$output"
+    return 1
+}
+
 # Get versions for a specific page
 get_versions_page() {
     local page=$1
-    gh api \
+    gh_api \
         --header "Accept: application/vnd.github+json" \
         --header "X-GitHub-Api-Version: 2022-11-28" \
         "$api_path/packages/container/$package_name/versions?per_page=$per_page&page=$page"
@@ -156,7 +177,7 @@ delete_version() {
     fi
 
     echo "Deleting version ID: $version_id ($description)"
-    if gh api \
+    if gh_api \
         --method DELETE \
         --header "Accept: application/vnd.github+json" \
         --header "X-GitHub-Api-Version: 2022-11-28" \

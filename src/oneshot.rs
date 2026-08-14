@@ -248,7 +248,7 @@ mod test {
 
     async fn make_svc() -> (
         ServerGuard,
-        OneshotService<ReplaceAll<'static>, HttpConnector, String>,
+        OneshotService<ReplaceAll<&'static str, &'static str>, HttpConnector, String>,
     ) {
         let server = mockito::Server::new_async().await;
         let uri = Uri::try_from(&server.url());

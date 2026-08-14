@@ -149,7 +149,7 @@ jobs:
 
   docker-prepare-variables:
     name: Prepare Docker variables and version bump patch
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       application_name: ${{ steps.variables.outputs.application_name }}
       description: ${{ steps.variables.outputs.description }}
@@ -236,7 +236,7 @@ jobs:
     strategy:
       matrix:
         runs-on:
-          - "ubuntu-latest"
+          - "ubuntu-26.04"
           - "ubuntu-24.04-arm"
         platform: ${{ fromJSON(needs.architectures.outputs.architectures) }}
     runs-on: ${{ matrix.runs-on }}
@@ -363,7 +363,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: |
-          matrix.runs-on == 'ubuntu-latest'
+          matrix.runs-on == 'ubuntu-26.04'
         with:
           if-no-files-found: error
           name: container-${{ needs.docker-prepare-variables.outputs.application_name }}-${{ steps.variables.outputs.platform_no_slashes }}
@@ -372,7 +372,7 @@ jobs:
 
   docker-publish:
     name: Publish Docker container
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     services:
       registry:
         image: registry:3@sha256:1be55279f18a2fe1a74edf2664cac61c1bea305b7b4642dab412e7affdcb3e33
@@ -527,7 +527,7 @@ jobs:
 
   docker-attest:
     name: Attest Docker container
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     permissions:
       artifact-metadata: write
       attestations: write

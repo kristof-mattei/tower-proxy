@@ -1,7 +1,7 @@
 #!/bin/bash
 
 base_rustflags=""
-cargo_features=""
+cargo_features="--all-features"
 
 export RUSTFLAGS="${base_rustflags} --allow=warnings -Cinstrument-coverage"
 

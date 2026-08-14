@@ -4,6 +4,10 @@ set -e
 build() {
     application_name=$1
     platform=$2
+
+    # locally there is no version bump, CI provides the real patch
+    touch version-bump.patch
+
     docker buildx \
         build \
         --file Dockerfile . \

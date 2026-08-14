@@ -282,6 +282,12 @@ mod test {
     }
 
     #[tokio::test]
+    async fn downgrade_version() {
+        let (mut server, mut svc) = make_svc().await;
+        test_helper::downgrade_version(&mut server, &mut svc).await;
+    }
+
+    #[tokio::test]
     async fn match_post() {
         let (mut server, mut svc) = make_svc().await;
         test_helper::match_post(&mut server, &mut svc).await;

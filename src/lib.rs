@@ -222,7 +222,7 @@ compile_error!(
 mod test_helper {
     use std::convert::Infallible;
 
-    use http::{Request, Response, StatusCode};
+    use http::{Request, Response, StatusCode, Version};
     use http_body_util::BodyExt as _;
     use hyper::body::Incoming;
     use mockito::{Matcher, ServerGuard};
@@ -246,7 +246,7 @@ mod test_helper {
     {
         let mut builder = Request::builder()
             .method(method)
-            .uri(format!("https://test.com{}", suffix));
+            .uri(format!("https://example.com{}", suffix));
 
         if let Some(content_type) = content_type {
             builder = builder.header("Content-Type", content_type);
@@ -294,6 +294,35 @@ mod test_helper {
             (StatusCode::NOT_IMPLEMENTED, ""),
         )
         .await;
+    }
+
+    pub async fn downgrade_version<S>(server: &mut ServerGuard, svc: &mut S)
+    where
+        S: Service<
+                Request<String>,
+                Response = Result<Response<Incoming>, ProxyError>,
+                Error = Infallible,
+                Future = RevProxyFuture,
+            >,
+    {
+        let _mk = server
+            .mock("GET", "/goo")
+            .with_body("ok")
+            .create_async()
+            .await;
+
+        let request = Request::builder()
+            .method("GET")
+            .uri("https://example.com/foo")
+            .version(Version::HTTP_2)
+            .body(String::new())
+            .unwrap();
+
+        let response = svc.call(request).await.unwrap().unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = response.into_body().collect().await.unwrap();
+        assert_eq!(body.to_bytes(), "ok");
     }
 
     pub async fn match_query<S>(server: &mut ServerGuard, svc: &mut S)

@@ -4,7 +4,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use http::uri::{Authority, Scheme};
-use http::{Error as HttpError, Request, Response};
+use http::{Error as HttpError, Request, Response, Version};
 use hyper::body::{Body as HttpBody, Incoming};
 use hyper_util::client::legacy::connect::Connect;
 use hyper_util::client::legacy::{Client, ResponseFuture};
@@ -33,6 +33,11 @@ impl RevProxyFuture {
         B::Error: Into<BoxErr>,
         Pr: PathRewriter,
     {
+        // The version is hop-by-hop: downgrade anything above HTTP/1.1 and let the `Client` negotiate the upstream version.
+        if req.version() > Version::HTTP_11 {
+            *req.version_mut() = Version::HTTP_11;
+        }
+
         let inner = path
             .rewrite_uri(&mut req, scheme, authority)
             .map(|()| client.request(req))

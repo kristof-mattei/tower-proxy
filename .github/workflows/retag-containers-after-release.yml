@@ -29,7 +29,7 @@ env:
 jobs:
   repo-has-container:
     name: Repo has container?
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       has_container: ${{ steps.determine.outputs.has_container }}
 
@@ -43,7 +43,7 @@ jobs:
 
   retag-containers:
     name: Retag the containers
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs:
       - repo-has-container
     if: |

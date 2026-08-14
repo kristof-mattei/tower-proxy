@@ -13,7 +13,7 @@ permissions:
 jobs:
   repo-has-container:
     name: Repo has container?
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       has_container: ${{ steps.determine.outputs.has_container }}
     steps:
@@ -26,7 +26,7 @@ jobs:
 
   cleanup-containers:
     name: Cleanup containers
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs:
       - repo-has-container
     if: |
@@ -48,7 +48,7 @@ jobs:
 
   cleanup-container-build-cache:
     name: Cleanup container build cache
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs:
       - repo-has-container
     if: |

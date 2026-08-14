@@ -15,7 +15,7 @@ env:
 jobs:
   format:
     name: Format
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     if: ${{ !startsWith(github.head_ref, 'release/') }}
     steps:
       - name: Checkout

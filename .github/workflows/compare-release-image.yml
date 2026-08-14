@@ -32,7 +32,7 @@ jobs:
 
   compare:
     name: Compare release image against latest
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs:
       - repo-has-container
     if: fromJSON(needs.repo-has-container.outputs.has_container) == true

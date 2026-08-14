@@ -20,7 +20,7 @@ env:
 jobs:
   repo-has-crate:
     name: Repo publishes crate?
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       has_crate: ${{ steps.determine.outputs.has_crate }}
 
@@ -34,7 +34,7 @@ jobs:
 
   publish-crate:
     name: Publish crate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     environment: release
     permissions:
       contents: read

@@ -1,0 +1,4 @@
+self-hosted-runner:
+  # ubuntu-26.04 is a GitHub-hosted runner (actions/runner-images#14226), not yet in actionlint's built-in label list
+  labels:
+    - "ubuntu-26.04"

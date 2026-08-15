@@ -73,12 +73,12 @@ impl PathRewriter for Identity {
 /// assert_eq!(Static("bar").rewrite("foo"), "bar");
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Static<'a>(pub &'a str);
+pub struct Static<S>(pub S);
 
-impl PathRewriter for Static<'_> {
+impl<S: AsRef<str>> PathRewriter for Static<S> {
     #[inline]
     fn rewrite<'a>(&'a mut self, _path: &'a str) -> Cow<'a, str> {
-        self.0.into()
+        self.0.as_ref().into()
     }
 }
 
@@ -89,12 +89,13 @@ impl PathRewriter for Static<'_> {
 /// assert_eq!(ReplaceAll("foo", "bar").rewrite("foofoo"), "barbar");
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ReplaceAll<'a>(pub &'a str, pub &'a str);
+pub struct ReplaceAll<S1, S2>(pub S1, pub S2);
 
-impl PathRewriter for ReplaceAll<'_> {
+impl<S1: AsRef<str>, S2: AsRef<str>> PathRewriter for ReplaceAll<S1, S2> {
     fn rewrite<'a>(&mut self, path: &'a str) -> Cow<'a, str> {
-        if path.contains(self.0) {
-            path.replace(self.0, self.1).into()
+        let old = self.0.as_ref();
+        if path.contains(old) {
+            path.replace(old, self.1.as_ref()).into()
         } else {
             path.into()
         }
@@ -109,12 +110,13 @@ impl PathRewriter for ReplaceAll<'_> {
 /// assert_eq!(ReplaceN("foo", "bar", 3).rewrite("foofoo"), "barbar");
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ReplaceN<'a>(pub &'a str, pub &'a str, pub usize);
+pub struct ReplaceN<S1, S2>(pub S1, pub S2, pub usize);
 
-impl PathRewriter for ReplaceN<'_> {
+impl<S1: AsRef<str>, S2: AsRef<str>> PathRewriter for ReplaceN<S1, S2> {
     fn rewrite<'a>(&mut self, path: &'a str) -> Cow<'a, str> {
-        if path.contains(self.0) {
-            path.replacen(self.0, self.1, self.2).into()
+        let old = self.0.as_ref();
+        if path.contains(old) {
+            path.replacen(old, self.1.as_ref(), self.2).into()
         } else {
             path.into()
         }
@@ -129,11 +131,11 @@ impl PathRewriter for ReplaceN<'_> {
 /// assert_eq!(TrimPrefix("bar").rewrite("foobarfoo"), "foobarfoo");
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct TrimPrefix<'a>(pub &'a str);
+pub struct TrimPrefix<S>(pub S);
 
-impl PathRewriter for TrimPrefix<'_> {
+impl<S: AsRef<str>> PathRewriter for TrimPrefix<S> {
     fn rewrite<'a>(&mut self, path: &'a str) -> Cow<'a, str> {
-        if let Some(stripped) = path.strip_prefix(self.0) {
+        if let Some(stripped) = path.strip_prefix(self.0.as_ref()) {
             stripped.into()
         } else {
             path.into()
@@ -149,11 +151,11 @@ impl PathRewriter for TrimPrefix<'_> {
 /// assert_eq!(TrimSuffix("bar").rewrite("foobarfoo"), "foobarfoo");
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct TrimSuffix<'a>(pub &'a str);
+pub struct TrimSuffix<S>(pub S);
 
-impl PathRewriter for TrimSuffix<'_> {
+impl<S: AsRef<str>> PathRewriter for TrimSuffix<S> {
     fn rewrite<'a>(&mut self, path: &'a str) -> Cow<'a, str> {
-        if let Some(stripped) = path.strip_suffix(self.0) {
+        if let Some(stripped) = path.strip_suffix(self.0.as_ref()) {
             stripped.into()
         } else {
             path.into()
@@ -168,12 +170,13 @@ impl PathRewriter for TrimSuffix<'_> {
 /// assert_eq!(AppendPrefix("foo").rewrite("bar"), "foobar");
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct AppendPrefix<'a>(pub &'a str);
+pub struct AppendPrefix<S>(pub S);
 
-impl PathRewriter for AppendPrefix<'_> {
+impl<S: AsRef<str>> PathRewriter for AppendPrefix<S> {
     fn rewrite<'a>(&mut self, path: &'a str) -> Cow<'a, str> {
-        let mut ret = String::with_capacity(self.0.len() + path.len());
-        ret.push_str(self.0);
+        let prefix = self.0.as_ref();
+        let mut ret = String::with_capacity(prefix.len() + path.len());
+        ret.push_str(prefix);
         ret.push_str(path);
         ret.into()
     }
@@ -186,13 +189,14 @@ impl PathRewriter for AppendPrefix<'_> {
 /// assert_eq!(AppendSuffix("foo").rewrite("bar"), "barfoo");
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct AppendSuffix<'a>(pub &'a str);
+pub struct AppendSuffix<S>(pub S);
 
-impl PathRewriter for AppendSuffix<'_> {
+impl<S: AsRef<str>> PathRewriter for AppendSuffix<S> {
     fn rewrite<'a>(&mut self, path: &'a str) -> Cow<'a, str> {
-        let mut ret = String::with_capacity(self.0.len() + path.len());
+        let suffix = self.0.as_ref();
+        let mut ret = String::with_capacity(suffix.len() + path.len());
         ret.push_str(path);
-        ret.push_str(self.0);
+        ret.push_str(suffix);
         ret.into()
     }
 }
@@ -326,6 +330,10 @@ mod test {
         let path = "/foo/bar";
         let mut rw = AppendSuffix("/baz");
         assert_eq!(rw.rewrite(path), "/foo/bar/baz");
+
+        let path = "/foo/bar";
+        let mut rw = AppendPrefix("/baz".to_owned());
+        assert_eq!(rw.rewrite(path), "/baz/foo/bar");
     }
 
     #[test]
@@ -344,6 +352,14 @@ mod test {
             2,
         );
         assert_eq!(rw.rewrite(path), "/10-21-2021/12-02-2021/2022/01/13");
+    }
+
+    #[test]
+    fn owned_strings() {
+        let mut rw = AppendPrefix(String::from("/baz"));
+        let mut clone = rw.clone();
+        assert_eq!(rw.rewrite("/foo/bar"), "/baz/foo/bar");
+        assert_eq!(clone.rewrite("/foo/bar"), "/baz/foo/bar");
     }
 
     #[test]

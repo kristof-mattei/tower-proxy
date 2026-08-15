@@ -408,11 +408,11 @@ mod test {
     use mockito::ServerGuard;
 
     use super::*;
-    use crate::{ReplaceAll, test_helper};
+    use crate::{AppendPrefix, ReplaceAll, test_helper};
 
     async fn make_svc() -> (
         ServerGuard,
-        ReusedService<ReplaceAll<'static>, HttpConnector, String>,
+        ReusedService<ReplaceAll<&'static str, &'static str>, HttpConnector, String>,
     ) {
         let server = mockito::Server::new_async().await;
         let uri = Uri::try_from(&server.url());
@@ -431,6 +431,18 @@ mod test {
         );
         assert!(svc.is_ok());
         (server, svc.unwrap())
+    }
+
+    #[test]
+    fn owned_rewriter_service_is_clone_and_static() {
+        fn assert_clone_send_static<T: Clone + Send + 'static>(_: &T) {}
+
+        let path: &str = &String::from("/api/v1");
+        let svc = builder_http::<String, _>("example.com:1234")
+            .unwrap()
+            .build(AppendPrefix(path.to_owned()));
+
+        assert_clone_send_static(&svc);
     }
 
     #[tokio::test]

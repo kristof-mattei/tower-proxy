@@ -163,7 +163,9 @@ impl<S: AsRef<str>> PathRewriter for TrimSuffix<S> {
     }
 }
 
-/// Appends a prefix.
+/// Appends a prefix by plain string concatenation.
+///
+/// A prefix ending in `/` produces `//` when the path starts with `/`. Use [`AppendPathPrefix`] to join slash-safely.
 ///
 /// ```
 /// # use tower_proxy::rewrite::{PathRewriter, AppendPrefix};
@@ -177,6 +179,48 @@ impl<S: AsRef<str>> PathRewriter for AppendPrefix<S> {
         let prefix = self.0.as_ref();
         let mut ret = String::with_capacity(prefix.len() + path.len());
         ret.push_str(prefix);
+        ret.push_str(path);
+        ret.into()
+    }
+}
+
+/// Appends a prefix to a path.
+///
+/// Unlike [`AppendPrefix`], this joins slash-safely: trailing slashes are trimmed from the prefix at construction, so joining with a path that starts with `/` never produces `//`.
+///
+/// ```
+/// # use tower_proxy::rewrite::{PathRewriter, AppendPathPrefix};
+/// assert_eq!(AppendPathPrefix::new("/api").rewrite("/foo"), "/api/foo");
+/// assert_eq!(AppendPathPrefix::new("/api/").rewrite("/foo"), "/api/foo");
+/// assert_eq!(AppendPathPrefix::new("/").rewrite("/foo"), "/foo");
+/// ```
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AppendPathPrefix<'p>(Cow<'p, str>);
+
+impl<'p> AppendPathPrefix<'p> {
+    #[must_use]
+    pub fn new<I: Into<Cow<'p, str>>>(prefix: I) -> Self {
+        let prefix = match prefix.into() {
+            Cow::Borrowed(borrowed) => Cow::Borrowed(borrowed.trim_end_matches('/')),
+            Cow::Owned(mut owned) => {
+                let trimmed = owned.trim_end_matches('/').len();
+                owned.truncate(trimmed);
+                Cow::Owned(owned)
+            },
+        };
+
+        Self(prefix)
+    }
+}
+
+impl PathRewriter for AppendPathPrefix<'_> {
+    fn rewrite<'a>(&mut self, path: &'a str) -> Cow<'a, str> {
+        if self.0.is_empty() {
+            return path.into();
+        }
+
+        let mut ret = String::with_capacity(self.0.len() + path.len());
+        ret.push_str(&self.0);
         ret.push_str(path);
         ret.into()
     }
@@ -276,8 +320,8 @@ mod test {
     use pretty_assertions::assert_eq;
 
     use super::{
-        AppendPrefix, AppendSuffix, Func, LibRegex, PathRewriter as _, RegexAll, RegexN,
-        ReplaceAll, ReplaceN, Static, TrimPrefix, TrimSuffix,
+        AppendPathPrefix, AppendPrefix, AppendSuffix, Func, LibRegex, PathRewriter as _, RegexAll,
+        RegexN, ReplaceAll, ReplaceN, Static, TrimPrefix, TrimSuffix,
     };
 
     #[test]
@@ -334,6 +378,21 @@ mod test {
         let path = "/foo/bar";
         let mut rw = AppendPrefix("/baz".to_owned());
         assert_eq!(rw.rewrite(path), "/baz/foo/bar");
+    }
+
+    #[test]
+    fn append_path() {
+        let mut rw = AppendPathPrefix::new("/baz");
+        assert_eq!(rw.rewrite("/foo/bar"), "/baz/foo/bar");
+
+        let mut rw = AppendPathPrefix::new("/baz/");
+        assert_eq!(rw.rewrite("/foo/bar"), "/baz/foo/bar");
+
+        let mut rw = AppendPathPrefix::new(String::from("/baz/"));
+        assert_eq!(rw.rewrite("/foo/bar"), "/baz/foo/bar");
+
+        let mut rw = AppendPathPrefix::new("/");
+        assert_eq!(rw.rewrite("/foo/bar"), "/foo/bar");
     }
 
     #[test]

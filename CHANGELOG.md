@@ -1,4 +1,10 @@
 <!-- header goes here -->
+## [0.10.0](https://github.com/kristof-mattei/tower-proxy/compare/v0.9.1..v0.10.0) - 2026-08-15
+
+### 🚀 Features
+
+- *(rewrite)* Add `AppendPathPrefix`, a slash-safe alternative to `AppendPrefix` by [@kristof-mattei](https://github.com/kristof-mattei) ([`220560a`](https://github.com/kristof-mattei/tower-proxy/commit/220560aae6488d72612fda2b80602ef84ea86562))
+- [**breaking**] Path rewriters accept owned strings by [@kristof-mattei](https://github.com/kristof-mattei) ([`0483ca5`](https://github.com/kristof-mattei/tower-proxy/commit/0483ca5a8200983b5f6369c310f71169d9152cc4))
 ## [0.9.1](https://github.com/kristof-mattei/tower-proxy/compare/v0.9.0..v0.9.1) - 2026-08-14
 
 ### 🐛 Bug Fixes

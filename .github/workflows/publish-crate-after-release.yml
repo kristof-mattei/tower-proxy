@@ -23,6 +23,7 @@ jobs:
     runs-on: ubuntu-26.04
     outputs:
       has_crate: ${{ steps.determine.outputs.has_crate }}
+      version: ${{ steps.version.outputs.version }}
 
     steps:
       - name: Repo has crate?
@@ -32,10 +33,22 @@ jobs:
           has_crate="${{ vars.HAS_CRATE }}"
           echo "has_crate=${has_crate:-false}" >> "${GITHUB_OUTPUT}"
 
+      - name: Determine version
+        id: version
+        shell: bash
+        run: |
+          version="${{ github.ref_name }}"
+          # remove v
+          version="${version//v/}"
+
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
   publish-crate:
     name: Publish crate
     runs-on: ubuntu-26.04
-    environment: release
+    environment:
+      name: release
+      url: https://crates.io/crates/${{ github.event.repository.name }}/${{ needs.repo-has-crate.outputs.version }}
     permissions:
       contents: read
       id-token: write
@@ -73,14 +86,8 @@ jobs:
 
       - name: Set version in Cargo.toml / Cargo.lock
         shell: bash
-        id: version
         run: |
-          version="${{ github.ref_name }}"
-          # remove v
-          version="${version//v/}"
-
-          # store
-          cargo set-version "${version}"
+          cargo set-version "${{ needs.repo-has-crate.outputs.version }}"
 
           git diff
 

@@ -6,8 +6,11 @@ on:
     - cron: "0 20 * * *"
   workflow_dispatch:
 
+concurrency:
+  group: "${{ github.workflow }}"
+  cancel-in-progress: false # deletes package versions, let it finish
+
 permissions:
-  packages: write
   contents: read
 
 jobs:
@@ -20,13 +23,17 @@ jobs:
       - name: Repo has docker container?
         shell: bash
         id: determine
+        env:
+          HAS_CONTAINER: ${{ vars.HAS_CONTAINER }}
         run: |
-          has_container="${{ vars.HAS_CONTAINER }}"
-          echo "has_container=${has_container:-false}" >> "${GITHUB_OUTPUT}"
+          echo "has_container=${HAS_CONTAINER:-false}" >> "${GITHUB_OUTPUT}"
 
   cleanup-containers:
     name: Cleanup containers
     runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      packages: write # delete container versions
     needs:
       - repo-has-container
     if: |
@@ -35,20 +42,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           show-progress: false
+
+      # The package is private, manifest inspection (skopeo/docker) needs registry credentials
+      - name: Log into registry ghcr.io
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run container cleanup
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ./.github/scripts/cleanup-containers.sh \
-            --user ${{ github.repository_owner }} \
-            --package ${{ github.event.repository.name }} \
+            --user "${GITHUB_REPOSITORY_OWNER}" \
+            --package "${GITHUB_REPOSITORY##*/}" \
             --yes
 
   cleanup-container-build-cache:
     name: Cleanup container build cache
     runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      packages: write # delete build cache versions
     needs:
       - repo-has-container
     if: |
@@ -57,6 +76,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           show-progress: false
 
       - name: Run container build cache cleanup
@@ -64,6 +84,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ./.github/scripts/cleanup-container-build-cache.sh \
-            --user ${{ github.repository_owner }} \
-            --package ${{ github.event.repository.name }}-cache \
+            --user "${GITHUB_REPOSITORY_OWNER}" \
+            --package "${GITHUB_REPOSITORY##*/}-cache" \
             --yes

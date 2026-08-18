@@ -2,7 +2,7 @@
 
 new_name=$1
 
-filtered_name=$(echo "${new_name}" | sed -e "s/[a-z0-9-]//g")
+filtered_name="${new_name//[a-z0-9-]/}"
 
 echo "New name = ${new_name}"
 
@@ -11,16 +11,16 @@ if [[ ${#filtered_name} != 0 ]]; then
     exit 1
 fi
 
-new_name_with_underscore=$(echo "${new_name}" | sed -e "s/-/_/g")
+new_name_with_underscore="${new_name//-/_}"
 
 echo "New name with underscore = ${new_name_with_underscore}"
 
 part_name="rust-"
 old_name="${part_name}seed"
-old_name_with_underscore=$(echo "${old_name}" | sed -e "s/-/_/g")
+old_name_with_underscore="${old_name//-/_}"
 
-echo ${old_name_with_underscore}
+echo "${old_name_with_underscore}"
 
-rg --hidden --glob '!.git/*' --files-with-matches ${old_name} | xargs -i sed -i "s/${old_name}/${new_name}/g" {}
-rg --hidden --glob '!.git/*' --files-with-matches ${old_name_with_underscore}
-rg --hidden --glob '!.git/*' --files-with-matches ${old_name_with_underscore} | xargs -i sed -i "s/${old_name_with_underscore}/${new_name_with_underscore}/g" {}
+rg --hidden --glob '!.git/*' --files-with-matches "${old_name}" | xargs --replace={} sed --in-place "s/${old_name}/${new_name}/g" {}
+rg --hidden --glob '!.git/*' --files-with-matches "${old_name_with_underscore}"
+rg --hidden --glob '!.git/*' --files-with-matches "${old_name_with_underscore}" | xargs --replace={} sed --in-place "s/${old_name_with_underscore}/${new_name_with_underscore}/g" {}

@@ -10,13 +10,15 @@ export LLVM_PROFILE_FILE="profiling/build-%p-%m.profraw"
 cargo build ${cargo_features} --all-targets --locked --workspace
 
 # cleanup old values
-find -name '*.profraw' | xargs rm
+find . -name '*.profraw' -delete
 
 # different from the `cargo build` ones
 LLVM_PROFILE_FILE="profiling/profile-%p-%m.profraw"
 cargo nextest run --profile ci --no-fail-fast ${cargo_features} --all-targets --workspace
 
-grcov $(find . -name "profile-*.profraw" -print) \
+mapfile -d '' profraw_files < <(find . -name "profile-*.profraw" -print0)
+
+grcov "${profraw_files[@]}" \
     --binary-path ./target/debug/ \
     --branch \
     --excl-br-line "^\s*((debug_)?assert(_eq|_ne)?!)" \

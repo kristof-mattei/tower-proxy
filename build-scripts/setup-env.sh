@@ -3,11 +3,11 @@
 dpkg_add_arch() {
     # are we cross compiling?
     if ! dpkg-architecture --equal "$1"; then
-        dpkg --add-architecture $1
+        dpkg --add-architecture "$1"
     fi
     apt-get update
     apt-get --no-install-recommends install --yes \
-        musl-tools:$1
+        "musl-tools:$1"
 }
 
 case $TARGET in

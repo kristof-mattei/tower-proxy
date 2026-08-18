@@ -29,19 +29,19 @@ jobs:
       - name: Repo has crate?
         id: determine
         shell: bash
+        env:
+          HAS_CRATE: ${{ vars.HAS_CRATE }}
         run: |
-          has_crate="${{ vars.HAS_CRATE }}"
-          echo "has_crate=${has_crate:-false}" >> "${GITHUB_OUTPUT}"
+          echo "has_crate=${HAS_CRATE:-false}" >> "${GITHUB_OUTPUT}"
 
       - name: Determine version
         id: version
         shell: bash
+        env:
+          REF_NAME: ${{ github.ref_name }}
         run: |
-          version="${{ github.ref_name }}"
-          # remove v
-          version="${version//v/}"
-
-          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          # tags are vX.Y.Z, crates.io versions are not prefixed
+          echo "version=${REF_NAME#v}" >> "${GITHUB_OUTPUT}"
 
   publish-crate:
     name: Publish crate
@@ -51,7 +51,7 @@ jobs:
       url: https://crates.io/crates/${{ github.event.repository.name }}/${{ needs.repo-has-crate.outputs.version }}
     permissions:
       contents: read
-      id-token: write
+      id-token: write # crates-io-auth-action trades this for a publish token
     needs:
       - repo-has-crate
     if: |
@@ -60,6 +60,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           show-progress: false
 
       - name: Set up mold
@@ -86,8 +87,10 @@ jobs:
 
       - name: Set version in Cargo.toml / Cargo.lock
         shell: bash
+        env:
+          VERSION: ${{ needs.repo-has-crate.outputs.version }}
         run: |
-          cargo set-version "${{ needs.repo-has-crate.outputs.version }}"
+          cargo set-version "${VERSION}"
 
           git diff
 

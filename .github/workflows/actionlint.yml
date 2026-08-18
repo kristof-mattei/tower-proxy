@@ -6,6 +6,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: "${{ github.workflow }} @ ${{ github.ref_name }}"
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -18,9 +22,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           show-progress: false
 
       - name: Run actionlint
         uses: raven-actions/actionlint@3d39aea434753780c3b3d4a1a31c854b4dbf49d7 # v2.2.0
         with:
           pyflakes: false
+
+      # actionlint only reaches shell inside `run:` blocks, standalone scripts need their own pass
+      - name: Install shellcheck
+        uses: taiki-e/install-action@5b4d68e2e660441203ab128a23676f1e4faf1532 # v2.86.3
+        with:
+          tool: shellcheck
+
+      - name: Run shellcheck
+        shell: bash
+        run: |
+          git ls-files -z '*.sh' | xargs --null shellcheck

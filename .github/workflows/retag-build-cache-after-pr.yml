@@ -24,8 +24,6 @@ concurrency:
 
 permissions:
   contents: read
-  packages: write
-  pull-requests: read
 
 env:
   IMAGE_NAME: ${{ github.repository }}
@@ -46,9 +44,10 @@ jobs:
       - name: Repo has docker container?
         id: determine
         shell: bash
+        env:
+          HAS_CONTAINER: ${{ vars.HAS_CONTAINER }}
         run: |
-          has_container="${{ vars.HAS_CONTAINER }}"
-          echo "has_container=${has_container:-false}" >> "${GITHUB_OUTPUT}"
+          echo "has_container=${HAS_CONTAINER:-false}" >> "${GITHUB_OUTPUT}"
 
   architectures:
     name: Build matrix
@@ -76,6 +75,10 @@ jobs:
           - "ubuntu-24.04-arm"
         platform: ${{ fromJSON(needs.architectures.outputs.architectures) }}
     runs-on: ${{ matrix.runs-on }}
+    permissions:
+      contents: read
+      packages: write # retag build cache images in ghcr.io
+      pull-requests: read # resolve the PR that produced the incoming merge commit
     needs:
       - architectures
       - repo-has-container
@@ -85,6 +88,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           show-progress: false
           fetch-depth: 2
 
@@ -99,17 +103,14 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PLATFORM: ${{ matrix.platform }}
         run: |
-          platform_no_slashes="${{ matrix.platform }}"
-          platform_no_slashes="${platform_no_slashes//\//-}"
+          platform_no_slashes="${PLATFORM//\//-}"
 
-          image_name="${{ env.IMAGE_NAME }}"
-          image_name="${image_name,,}"
-          registry="${{ env.REGISTRY }}"
-          registry="${registry,,}"
+          image_name="${IMAGE_NAME,,}"
+          registry="${REGISTRY,,}"
 
-          runner_arch="${{ runner.arch }}"
-          runner_arch="${runner_arch,,}"
+          runner_arch="${RUNNER_ARCH,,}"
 
           target_ref="${registry}/${image_name}-cache:buildcache-main-${runner_arch}-${platform_no_slashes}"
 
@@ -127,7 +128,7 @@ jobs:
 
               echo "Looking up the PR for ${parent2} (attempt ${attempt} of 5)"
 
-              if pr_number=$(gh api "/repos/${{ github.repository }}/commits/${parent2}/pulls" --jq '.[0].number'); then
+              if pr_number=$(gh api "/repos/${GITHUB_REPOSITORY}/commits/${parent2}/pulls" --jq '.[0].number'); then
                 pr_found=true
                 break
               fi

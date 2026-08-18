@@ -11,6 +11,13 @@ on:
   schedule:
     - cron: "32 23 * * 5"
 
+concurrency:
+  # push, pull_request and schedule all run this workflow; on push and schedule
+  # `ref_name` is `main`, so without `event_name` in the group a push to main
+  # cancels an in-flight weekly scan, which is then lost until the next cron
+  group: "${{ github.workflow }} @ ${{ github.event_name }} @ ${{ github.ref_name }}"
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -19,10 +26,9 @@ jobs:
     name: Analyze (${{ matrix.language }})
     runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-26.04' }}
     permissions:
-      actions: read
+      actions: read # codeql-action reads the workflow run's metadata
       contents: read
-      # required for all workflows
-      security-events: write
+      security-events: write # upload the CodeQL results
 
     strategy:
       fail-fast: false
@@ -39,6 +45,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           show-progress: false
 
       - name: Initialize CodeQL

@@ -8,7 +8,8 @@
     },
     "scripts": {
         "format": "prettier --write .",
-        "spellcheck": "cspell --no-progress \"**\""
+        "spellcheck": "cspell --no-progress \"**\"",
+        "spellcheck:update": ": > project-words.txt && cspell --no-progress --words-only --unique \"**\" | tr '[:upper:]' '[:lower:]' | LC_ALL=en_US.UTF8 sort --unique > project-words.txt"
     },
     "devDependencies": {
         "cspell": "10.0.1",

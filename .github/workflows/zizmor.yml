@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
-name: Machete
+name: Zizmor
 
 on:
   pull_request:
@@ -14,8 +14,8 @@ permissions:
   contents: read
 
 jobs:
-  machete:
-    name: Machete
+  zizmor:
+    name: Zizmor
     runs-on: ubuntu-26.04
     if: ${{ !startsWith(github.head_ref, 'release/') }}
     steps:
@@ -25,26 +25,16 @@ jobs:
           persist-credentials: false
           show-progress: false
 
-      - name: Set up toolchain
-        shell: bash
-        run: |
-          rm "${HOME}/.cargo/bin/cargo-fmt"
-          rm "${HOME}/.cargo/bin/rust-analyzer"
-          rm "${HOME}/.cargo/bin/rustfmt"
-
-          rustup self update
-          rustup update
-          rustup show active-toolchain || rustup toolchain install
-          rustup show
-
-          cargo --version
-
-      - name: Install cargo-machete to ensure we don't have unneeded packages
+      - name: Install zizmor
         uses: taiki-e/install-action@5b4d68e2e660441203ab128a23676f1e4faf1532 # v2.86.3
         with:
-          tool: cargo-machete
+          tool: zizmor
 
-      - name: Run cargo machete
+      - name: Run zizmor
         shell: bash
+        env:
+          # a token switches zizmor out of offline mode, enabling the audits that
+          # query GitHub (known-vulnerable actions, ref resolution)
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cargo machete
+          zizmor --persona=pedantic .github

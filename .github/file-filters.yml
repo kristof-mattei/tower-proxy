@@ -4,6 +4,7 @@ shared: &shared
   - "build-scripts/**"
 docker:
   - *shared
+  - ".dockerignore"
   - Dockerfile
 rust:
   - *shared

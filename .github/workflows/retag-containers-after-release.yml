@@ -12,11 +12,7 @@ concurrency:
   cancel-in-progress: false # last one must win in case of multiple releases
 
 permissions:
-  artifact-metadata: write
-  attestations: write
   contents: read
-  id-token: write
-  packages: write
 
 env:
   CARGO_TERM_COLOR: always
@@ -37,13 +33,20 @@ jobs:
       - name: Repo has docker container?
         id: determine
         shell: bash
+        env:
+          HAS_CONTAINER: ${{ vars.HAS_CONTAINER }}
         run: |
-          has_container="${{ vars.HAS_CONTAINER }}"
-          echo "has_container=${has_container:-false}" >> "${GITHUB_OUTPUT}"
+          echo "has_container=${HAS_CONTAINER:-false}" >> "${GITHUB_OUTPUT}"
 
   retag-containers:
     name: Retag the containers
     runs-on: ubuntu-26.04
+    permissions:
+      artifact-metadata: write # actions/attest
+      attestations: write # actions/attest
+      contents: read
+      id-token: write # actions/attest
+      packages: write # retag images in ghcr.io
     needs:
       - repo-has-container
     if: |
@@ -88,8 +91,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          repo="${{ github.repository }}"
-          repo_lower="${repo,,}"
+          repo_lower="${GITHUB_REPOSITORY,,}"
 
           # the source tag is pushed by the push-triggered retag workflow, which may still be running, so poll
           OLD_TAG=""
@@ -99,12 +101,12 @@ jobs:
               sleep 30
             fi
 
-            echo "Looking for source tag sha-${{ github.sha }}-* (attempt ${attempt} of 30)"
+            echo "Looking for source tag sha-${GITHUB_SHA}-* (attempt ${attempt} of 30)"
 
             # || true: no match yet, or a transient api error, both mean retry
-            OLD_TAG=$(gh api "/users/${{ github.repository_owner }}/packages/container/${repo_lower##*/}/versions" \
+            OLD_TAG=$(gh api "/users/${GITHUB_REPOSITORY_OWNER}/packages/container/${repo_lower##*/}/versions" \
               --paginate \
-              --jq '.[] | .metadata.container.tags[]' | grep "^sha-${{ github.sha }}-.*\$" | head --lines 1) || true # .* is actual or retag
+              --jq '.[] | .metadata.container.tags[]' | grep "^sha-${GITHUB_SHA}-.*\$" | head --lines 1) || true # .* is actual or retag
 
             if [ -n "${OLD_TAG}" ]; then
               break
@@ -112,7 +114,7 @@ jobs:
           done
 
           if [ -z "${OLD_TAG}" ]; then
-            echo "::error::No matching source tag found for SHA ${{ github.sha }}"
+            echo "::error::No matching source tag found for SHA ${GITHUB_SHA}"
             exit 1
           fi
 
@@ -146,8 +148,10 @@ jobs:
 
       - name: Actually re-tag the container
         shell: bash
+        env:
+          NEW_TAGS: ${{ steps.meta.outputs.tags }}
         run: |
-          echo "${{ steps.meta.outputs.tags }}" | while IFS= read -r new_tag
+          echo "${NEW_TAGS}" | while IFS= read -r new_tag
             do
               docker buildx imagetools create --tag "${new_tag}" "${FULL_IMAGE_NAME}:${OLD_TAG}"
           done
@@ -162,10 +166,13 @@ jobs:
       - name: Copy the container to Docker Hub
         if: env.DOCKERHUB_IMAGE_NAME != ''
         shell: bash
+        env:
+          DIGEST: ${{ steps.digest.outputs.digest }}
+          NEW_TAGS: ${{ steps.meta-dockerhub.outputs.tags }}
         run: |
-          echo "${{ steps.meta-dockerhub.outputs.tags }}" | while IFS= read -r new_tag
+          echo "${NEW_TAGS}" | while IFS= read -r new_tag
             do
-              if [ "$(skopeo inspect --format '{{ .Digest }}' --no-tags "docker://${new_tag}" 2>/dev/null)" = "${{ steps.digest.outputs.digest }}" ]; then
+              if [ "$(skopeo inspect --format '{{ .Digest }}' --no-tags "docker://${new_tag}" 2>/dev/null)" = "${DIGEST}" ]; then
                 echo "${new_tag} already exists, skipping"
                 continue
               fi

@@ -52,13 +52,12 @@ jobs:
     name: Build Rust code
     if: ${{ !startsWith(github.head_ref, 'release/') }}
     uses: ./.github/workflows/rust.yml
-    secrets: inherit
     permissions:
-      checks: write
+      checks: write # publish-unit-test-result-action creates a check run
       contents: read
-      id-token: write
-      issues: read
-      pull-requests: write
+      id-token: write # codecov-action authenticates over OIDC
+      issues: read # publish-unit-test-result-action needs this in private repos
+      pull-requests: write # publish-unit-test-result-action comments the test summary
 
   repo-has-container:
     name: Repo has container?
@@ -70,9 +69,10 @@ jobs:
       - name: Repo has docker container?
         shell: bash
         id: determine
+        env:
+          HAS_CONTAINER: ${{ vars.HAS_CONTAINER }}
         run: |
-          has_container="${{ vars.HAS_CONTAINER }}"
-          echo "has_container=${has_container:-false}" >> "${GITHUB_OUTPUT}"
+          echo "has_container=${HAS_CONTAINER:-false}" >> "${GITHUB_OUTPUT}"
 
   changes:
     name: Detect changes
@@ -80,7 +80,7 @@ jobs:
     if: ${{ !startsWith(github.head_ref, 'release/') }}
     permissions:
       contents: read
-      pull-requests: read
+      pull-requests: read # dorny/paths-filter reads the PR's changed files
     outputs:
       docker: ${{ steps.filter.outputs.docker }}
       rust: ${{ steps.filter.outputs.rust }}
@@ -89,6 +89,7 @@ jobs:
         name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           show-progress: false
 
       - name: Check if we actually made changes
@@ -119,6 +120,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           show-progress: false
           fetch-depth: 0
 
@@ -141,11 +143,8 @@ jobs:
             echo "Force bumping to ${bumped}"
           fi
 
-          # remove v
-          version="${bumped//v/}"
-
-          # store
-          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          # tags are vX.Y.Z, cargo versions are not prefixed
+          echo "version=${bumped#v}" >> "${GITHUB_OUTPUT}"
 
   docker-prepare-variables:
     name: Prepare Docker variables and version bump patch
@@ -172,8 +171,10 @@ jobs:
 
       - name: Update Cargo.toml's version
         shell: bash
+        env:
+          VERSION: ${{ needs.calculate-version.outputs.version }}
         run: |
-          cargo set-version ${{ needs.calculate-version.outputs.version }}
+          cargo set-version "${VERSION}"
 
           git diff
 
@@ -193,13 +194,15 @@ jobs:
       - name: Variables
         shell: bash
         id: variables
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           # The application name, used in the Dockerfile
-          application_name=${{ env.IMAGE_NAME }}
           # split at the last / and keep that (kristof-mattei/repo-name -> repo-name)
-          application_name=${application_name##*/}
+          application_name="${IMAGE_NAME##*/}"
           # lowercase
-          application_name=${application_name,,}
+          application_name="${application_name,,}"
           echo "application_name=${application_name}" >> "${GITHUB_OUTPUT}"
 
           # The application's description, from Cargo.toml
@@ -210,17 +213,15 @@ jobs:
               "EOF" >> "$GITHUB_OUTPUT"
 
           # This is the unique docker tag
-          unique_tag=pr-${{ github.event.pull_request.base.sha }}-${{ github.event.pull_request.head.sha }}
+          unique_tag="pr-${BASE_SHA}-${HEAD_SHA}"
           echo "unique_tag=${unique_tag}" >> "${GITHUB_OUTPUT}"
 
           # The registry to which we'll push
-          registry=${{ env.REGISTRY }}
-          registry=${registry,,}
+          registry="${REGISTRY,,}"
           echo "registry=${registry}" >> "${GITHUB_OUTPUT}"
 
           # The final full image name, which is the registry, the owner and the repo name
-          image_name=${{ env.IMAGE_NAME }}
-          image_name=${image_name,,}
+          image_name="${IMAGE_NAME,,}"
           echo "full_image_name_remote_registry=${registry}/${image_name}" >> "${GITHUB_OUTPUT}"
 
           # The cache registry, separate from the main image registry
@@ -242,7 +243,7 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
     permissions:
       contents: read
-      packages: write
+      packages: write # push the build cache to ghcr.io
     needs:
       - calculate-version
       - architectures
@@ -268,20 +269,22 @@ jobs:
       - name: Set variables
         shell: bash
         id: variables
+        env:
+          CACHE_IMAGE_NAME: ${{ needs.docker-prepare-variables.outputs.full_image_name_cache_registry }}
+          PLATFORM: ${{ matrix.platform }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          UNIQUE_TAG: ${{ needs.docker-prepare-variables.outputs.unique_tag }}
         run: |
           # remove slashes from platform (`amd64/v3` -> `amd64-v3`)
-          platform_no_slashes=${{ matrix.platform }}
-          platform_no_slashes=${platform_no_slashes//\//-}
+          platform_no_slashes="${PLATFORM//\//-}"
           echo "platform_no_slashes=${platform_no_slashes}" >> "${GITHUB_OUTPUT}"
 
           # but we're only building 1 arch here, so we need to identify that container (we'll merge them later)
-          unique_tag_arch=${{ needs.docker-prepare-variables.outputs.unique_tag }}-${platform_no_slashes}
-          echo "unique_tag_arch=${unique_tag_arch}" >> "${GITHUB_OUTPUT}"
+          echo "unique_tag_arch=${UNIQUE_TAG}-${platform_no_slashes}" >> "${GITHUB_OUTPUT}"
 
-          runner_arch="${{ runner.arch }}"
-          runner_arch="${runner_arch,,}"
-          echo "buildcache_pr_ref=${{ needs.docker-prepare-variables.outputs.full_image_name_cache_registry }}:buildcache-pr-${{ github.event.pull_request.number }}-${runner_arch}-${platform_no_slashes}" >> "${GITHUB_OUTPUT}"
-          echo "buildcache_main_ref=${{ needs.docker-prepare-variables.outputs.full_image_name_cache_registry }}:buildcache-main-${runner_arch}-${platform_no_slashes}" >> "${GITHUB_OUTPUT}"
+          runner_arch="${RUNNER_ARCH,,}"
+          echo "buildcache_pr_ref=${CACHE_IMAGE_NAME}:buildcache-pr-${PR_NUMBER}-${runner_arch}-${platform_no_slashes}" >> "${GITHUB_OUTPUT}"
+          echo "buildcache_main_ref=${CACHE_IMAGE_NAME}:buildcache-main-${runner_arch}-${platform_no_slashes}" >> "${GITHUB_OUTPUT}"
 
       - name: Set up Docker
         uses: docker/setup-docker-action@77e84dbf09b47d1e29270283c22f16145aa85ca1 # v5.4.0
@@ -306,10 +309,10 @@ jobs:
       - name: Should we set up QEMU?
         shell: bash
         id: setup_qemu
+        env:
+          PLATFORM: ${{ matrix.platform }}
         run: |
-          base_platform="${{ matrix.platform }}"
-
-          if ! dpkg-architecture --equal "${base_platform%/*}"; then
+          if ! dpkg-architecture --equal "${PLATFORM%/*}"; then
             echo "setup_qemu=true" >> "${GITHUB_OUTPUT}"
           else
             echo "setup_qemu=false" >> "${GITHUB_OUTPUT}"
@@ -351,7 +354,8 @@ jobs:
           cache-from: |
             type=registry,ref=${{ steps.variables.outputs.buildcache_pr_ref }}
             type=registry,ref=${{ steps.variables.outputs.buildcache_main_ref }}
-          cache-to: type=registry,ref=${{ steps.variables.outputs.buildcache_pr_ref }},mode=max
+          # fork PRs run with a read-only token, which cannot push the build cache
+          cache-to: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('type=registry,ref={0},mode=max', steps.variables.outputs.buildcache_pr_ref) || '' }}
           annotations: ${{ steps.meta.outputs.annotations }}
           labels: ${{ steps.meta.outputs.labels }}
           outputs: type=oci,dest=/tmp/${{ steps.variables.outputs.unique_tag_arch }}.tar
@@ -381,7 +385,7 @@ jobs:
     outputs:
       digest: ${{ steps.local_image.outputs.digest }}
     permissions:
-      packages: write
+      packages: write # push the PR's image to ghcr.io
     needs:
       - calculate-version
       - docker-prepare-variables
@@ -437,19 +441,23 @@ jobs:
       - name: Load individual platform images from artifacts & push to registry
         shell: bash
         working-directory: ${{ steps.artifact.outputs.download-path }}
+        env:
+          ANNOTATIONS: ${{ steps.meta.outputs.annotations }}
+          LOCAL_IMAGE_NAME: ${{ needs.docker-prepare-variables.outputs.full_image_name_local_registry }}
+          UNIQUE_TAG: ${{ needs.docker-prepare-variables.outputs.unique_tag }}
         run: |
           platforms=()
           while IFS= read -r platform; do
             echo "Loading ${platform//\//-}:"
-            docker load --input "./${{ needs.docker-prepare-variables.outputs.unique_tag }}-${platform//\//-}.tar"
+            docker load --input "./${UNIQUE_TAG}-${platform//\//-}.tar"
 
-            full_name_with_platform=${{ needs.docker-prepare-variables.outputs.full_image_name_local_registry }}:${{ needs.docker-prepare-variables.outputs.unique_tag }}-${platform//\//-}
+            full_name_with_platform="${LOCAL_IMAGE_NAME}:${UNIQUE_TAG}-${platform//\//-}"
 
             echo "Pushing ${platform//\//-}:"
             docker push "$full_name_with_platform"
 
             platforms+=("$full_name_with_platform")
-          done <<< "${{ env.IMAGE_VARIANTS }}"
+          done <<< "${IMAGE_VARIANTS}"
 
           new_annotations=()
           while IFS= read -r annotation; do
@@ -458,28 +466,35 @@ jobs:
             annotation="${annotation/manifest:/index:}"
             new_annotations+=(--annotation)
             new_annotations+=("${annotation}")
-          done <<< "${{ steps.meta.outputs.annotations }}"
+          done <<< "${ANNOTATIONS}"
 
           # merge the platform containers in a new multiplatform one
           # with the new annotations, and push it to our local registry
-          docker buildx imagetools create "${new_annotations[@]}" --tag "${{ needs.docker-prepare-variables.outputs.full_image_name_local_registry }}:${{ needs.docker-prepare-variables.outputs.unique_tag }}" \
+          docker buildx imagetools create "${new_annotations[@]}" --tag "${LOCAL_IMAGE_NAME}:${UNIQUE_TAG}" \
             "${platforms[@]}"
 
-          echo "Inspecting ${{ needs.docker-prepare-variables.outputs.full_image_name_local_registry }}:${{ needs.docker-prepare-variables.outputs.unique_tag }}:"
-          docker buildx imagetools inspect --raw "${{ needs.docker-prepare-variables.outputs.full_image_name_local_registry }}:${{ needs.docker-prepare-variables.outputs.unique_tag }}"
+          echo "Inspecting ${LOCAL_IMAGE_NAME}:${UNIQUE_TAG}:"
+          docker buildx imagetools inspect --raw "${LOCAL_IMAGE_NAME}:${UNIQUE_TAG}"
 
       - name: Get digest of image in our local registry
         shell: bash
         id: local_image
+        env:
+          LOCAL_IMAGE_NAME: ${{ needs.docker-prepare-variables.outputs.full_image_name_local_registry }}
+          UNIQUE_TAG: ${{ needs.docker-prepare-variables.outputs.unique_tag }}
         run: |
-          digest=$(docker buildx imagetools inspect "${{ needs.docker-prepare-variables.outputs.full_image_name_local_registry }}:${{ needs.docker-prepare-variables.outputs.unique_tag }}" --format "{{json .}}" | jq --raw-output ".manifest.digest")
+          digest=$(docker buildx imagetools inspect "${LOCAL_IMAGE_NAME}:${UNIQUE_TAG}" --format "{{json .}}" | jq --raw-output ".manifest.digest")
 
           echo "digest=${digest}" >> "${GITHUB_OUTPUT}"
 
       - name: Push from local registry to remote with new tags
         shell: bash
+        env:
+          LOCAL_IMAGE_NAME: ${{ needs.docker-prepare-variables.outputs.full_image_name_local_registry }}
+          NEW_TAGS: ${{ steps.meta.outputs.tags }}
+          UNIQUE_TAG: ${{ needs.docker-prepare-variables.outputs.unique_tag }}
         run: |
-          source="docker://${{ needs.docker-prepare-variables.outputs.full_image_name_local_registry }}:${{ needs.docker-prepare-variables.outputs.unique_tag }}"
+          source="docker://${LOCAL_IMAGE_NAME}:${UNIQUE_TAG}"
 
           # skopeo's --retry-times does not retry a bare 500, so retry at the shell level too
           copy_with_retries() {
@@ -509,12 +524,14 @@ jobs:
           # try to upload all of them, if one of them fails, upload the other ones and fail
           while IFS= read -r tag; do
             copy_with_retries "${tag}" || exit_code=1
-          done <<< "${{ steps.meta.outputs.tags }}"
+          done <<< "${NEW_TAGS}"
 
           exit "${exit_code}"
 
       - name: Inspect new remote tags
         shell: bash
+        env:
+          NEW_TAGS: ${{ steps.meta.outputs.tags }}
         run: |
           while IFS= read -r new_tag; do
             echo "Inspecting ${new_tag}:"
@@ -523,18 +540,18 @@ jobs:
 
             # empty to get newline
             echo ""
-          done <<< "${{ steps.meta.outputs.tags }}"
+          done <<< "${NEW_TAGS}"
 
   docker-attest:
     name: Attest Docker container
     runs-on: ubuntu-26.04
     permissions:
-      artifact-metadata: write
-      attestations: write
+      artifact-metadata: write # actions/attest
+      attestations: write # actions/attest
       contents: read
-      id-token: write
-      packages: write
-      pull-requests: write
+      id-token: write # actions/attest
+      packages: write # actions/attest pushes the attestation to ghcr.io
+      pull-requests: write # docker/scout-action posts the comparison as a PR comment
     needs:
       - docker-prepare-variables
       - docker-build

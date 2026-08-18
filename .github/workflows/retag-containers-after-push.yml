@@ -22,11 +22,7 @@ concurrency:
   cancel-in-progress: false # no we need them
 
 permissions:
-  artifact-metadata: write
-  attestations: write
   contents: read
-  id-token: write
-  packages: write
 
 env:
   CARGO_TERM_COLOR: always
@@ -49,13 +45,20 @@ jobs:
       - name: Repo has docker container?
         id: determine
         shell: bash
+        env:
+          HAS_CONTAINER: ${{ vars.HAS_CONTAINER }}
         run: |
-          has_container="${{ vars.HAS_CONTAINER }}"
-          echo "has_container=${has_container:-false}" >> "${GITHUB_OUTPUT}"
+          echo "has_container=${HAS_CONTAINER:-false}" >> "${GITHUB_OUTPUT}"
 
   retag-containers:
     name: Retag the containers
     runs-on: ubuntu-26.04
+    permissions:
+      artifact-metadata: write # actions/attest
+      attestations: write # actions/attest
+      contents: read
+      id-token: write # actions/attest
+      packages: write # retag images in ghcr.io
     needs:
       - repo-has-container
     if: |
@@ -64,14 +67,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           show-progress: false
           fetch-depth: 2
 
       - name: Resolve base and PR head SHAs
         shell: bash
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
         run: |
           # push event, HEAD^2 is the tip of the incoming PR branch
-          echo "BASE_SHA=${{ github.event.before }}" >> "${GITHUB_ENV}"
+          echo "BASE_SHA=${BEFORE_SHA}" >> "${GITHUB_ENV}"
 
           exit_code=0
           # a commit always has a parent, but if it has 2, the commit is a merge
@@ -127,21 +133,20 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_TAG: "pr-${{ env.BASE_SHA }}-${{ env.INCOMING_PR_HEAD_COMMIT }}"
         run: |
-          repo="${{ github.repository }}"
-          repo_lower="${repo,,}"
+          repo_lower="${GITHUB_REPOSITORY,,}"
 
-          all_tags=$(gh api "/users/${{ github.repository_owner }}/packages/container/${repo_lower##*/}/versions" \
+          all_tags=$(gh api "/users/${GITHUB_REPOSITORY_OWNER}/packages/container/${repo_lower##*/}/versions" \
             --paginate \
             --jq '.[] | .metadata.container.tags[]')
 
           # search for the PR tag, there can only be zero or one match
-          pr_tag_found=$(echo "${all_tags}" | grep -c "^${{ env.PR_TAG }}\$") || true
+          pr_tag_found=$(echo "${all_tags}" | grep -c "^${PR_TAG}\$") || true
 
           if [ "${pr_tag_found}" -eq 1 ]
           then
             echo "Incoming PR produced a Docker image"
 
-            echo "OLD_TAG=${{ env.PR_TAG }}" >> "${GITHUB_ENV}"
+            echo "OLD_TAG=${PR_TAG}" >> "${GITHUB_ENV}"
             echo "SUFFIX=actual" >> "${GITHUB_ENV}"
           else
             # If we don't have an old tag, then the incoming PR didn't produce a container.
@@ -152,11 +157,11 @@ jobs:
             # so we find the last commit that github processed before this one
             # which will have gone through the same retagging process
             # and use that sha as our key to find the Docker container related to that commit
-            old_tag=$(echo "${all_tags}" | grep "^sha-${{ env.BASE_SHA }}-.*\$") || true # .* is actual or retag
+            old_tag=$(echo "${all_tags}" | grep "^sha-${BASE_SHA}-.*\$") || true # .* is actual or retag
 
             if [ -z "${old_tag}" ]
             then
-              echo "::error::No matching source tag found for base SHA ${{ env.BASE_SHA }}"
+              echo "::error::No matching source tag found for base SHA ${BASE_SHA}"
               exit 1
             fi
 
@@ -195,8 +200,10 @@ jobs:
 
       - name: Actually re-tag the container
         shell: bash
+        env:
+          NEW_TAGS: ${{ steps.meta.outputs.tags }}
         run: |
-          echo "${{ steps.meta.outputs.tags }}" | while IFS= read -r new_tag
+          echo "${NEW_TAGS}" | while IFS= read -r new_tag
             do
               docker buildx imagetools create --tag "${new_tag}" "${FULL_IMAGE_NAME}:${OLD_TAG}"
           done
@@ -211,8 +218,10 @@ jobs:
       - name: Copy the container to Docker Hub
         if: env.DOCKERHUB_IMAGE_NAME != ''
         shell: bash
+        env:
+          NEW_TAGS: ${{ steps.meta-dockerhub.outputs.tags }}
         run: |
-          echo "${{ steps.meta-dockerhub.outputs.tags }}" | while IFS= read -r new_tag
+          echo "${NEW_TAGS}" | while IFS= read -r new_tag
             do
               skopeo copy --all --preserve-digests --command-timeout 70s --retry-times 5 "docker://${FULL_IMAGE_NAME}:${OLD_TAG}" "docker://${new_tag}"
           done

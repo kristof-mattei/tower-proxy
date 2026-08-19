@@ -1,6 +1,5 @@
 shared: &shared
   - ".github/**"
-  - ".nvmrc"
   - "build-scripts/**"
 docker:
   - *shared

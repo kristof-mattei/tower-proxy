@@ -85,11 +85,11 @@ jobs:
       docker: ${{ steps.filter.outputs.docker }}
       rust: ${{ steps.filter.outputs.rust }}
     steps:
-      - &checkout
-        name: Checkout
+      - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          persist-credentials: false
+          # on push events dorny/paths-filter diffs against github.event.before over git and fetches it with the persisted credentials
+          persist-credentials: true
           show-progress: false
 
       - name: Check if we actually made changes
@@ -162,7 +162,12 @@ jobs:
       - calculate-version
     if: fromJSON(needs.repo-has-container.outputs.has_container) == true
     steps:
-      - *checkout
+      - &checkout
+        name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          show-progress: false
 
       - name: Install cargo-edit to do set-version
         uses: taiki-e/install-action@5b4d68e2e660441203ab128a23676f1e4faf1532 # v2.86.3
@@ -238,7 +243,7 @@ jobs:
       matrix:
         runs-on:
           - "ubuntu-26.04"
-          - "ubuntu-24.04-arm"
+          - "ubuntu-26.04-arm"
         platform: ${{ fromJSON(needs.architectures.outputs.architectures) }}
     runs-on: ${{ matrix.runs-on }}
     permissions:

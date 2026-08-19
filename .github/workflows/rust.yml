@@ -25,11 +25,11 @@ jobs:
     outputs:
       rust: ${{ steps.filter.outputs.rust }}
     steps:
-      - &checkout
-        name: Check out code
+      - name: Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          persist-credentials: false
+          # on push events dorny/paths-filter diffs against github.event.before over git and fetches it with the persisted credentials
+          persist-credentials: true
           show-progress: false
 
       - name: Check if we actually made changes
@@ -43,7 +43,12 @@ jobs:
     name: Cargo build
     runs-on: ubuntu-26.04
     steps:
-      - *checkout
+      - &checkout
+        name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          show-progress: false
 
       - &set_up_mold
         name: Set up mold

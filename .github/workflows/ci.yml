@@ -62,7 +62,6 @@ jobs:
   repo-has-container:
     name: Repo has container?
     runs-on: ubuntu-slim
-    if: ${{ !startsWith(github.head_ref, 'release/') }}
     outputs:
       has_container: ${{ steps.determine.outputs.has_container }}
     steps:
@@ -73,6 +72,80 @@ jobs:
           HAS_CONTAINER: ${{ vars.HAS_CONTAINER }}
         run: |
           echo "has_container=${HAS_CONTAINER:-false}" >> "${GITHUB_OUTPUT}"
+
+  release-base-container:
+    name: Release base container is on main
+    runs-on: ubuntu-slim
+    permissions:
+      actions: read # list the retag runs for the base commit
+      contents: read
+    needs:
+      - repo-has-container
+    if: |
+      startsWith(github.head_ref, 'release/v') &&
+      fromJSON(needs.repo-has-container.outputs.has_container) == true
+    steps:
+      - name: Wait for the base commit's retag run to succeed
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          GH_REPO: ${{ github.repository }} # no checkout, so gh cannot infer the repository from a git remote
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Release PRs build no container, so the retag run for their merge commit falls back to
+          # the `sha-<base>-*` tag, which the retag run for the base commit creates.
+          # Merging before that run has finished makes the merge commit's retag fail.
+          url=""
+          conclusion=""
+
+          for attempt in $(seq 1 30); do
+            if ((attempt > 1)); then
+              sleep 30
+            fi
+
+            echo "Looking for the retag run of ${BASE_SHA} (attempt ${attempt} of 30)"
+
+            # || true: no run yet, or a transient api error, both mean retry
+            run=$(gh run list \
+              --workflow retag-containers-after-push.yml \
+              --event push \
+              --commit "${BASE_SHA}" \
+              --limit 1 \
+              --json status,conclusion,url \
+              --jq '.[0] // empty') || true
+
+            if [ -z "${run}" ]; then
+              echo "No retag run found yet"
+              continue
+            fi
+
+            status=$(jq --raw-output '.status' <<< "${run}")
+            url=$(jq --raw-output '.url' <<< "${run}")
+
+            if [ "${status}" = "completed" ]; then
+              conclusion=$(jq --raw-output '.conclusion' <<< "${run}")
+              break
+            fi
+
+            echo "Retag run ${url} is ${status}"
+          done
+
+          if [ -z "${url}" ]; then
+            echo "::error::No retag run found for base commit ${BASE_SHA}"
+            exit 1
+          fi
+
+          if [ -z "${conclusion}" ]; then
+            echo "::error::Retag run ${url} for base commit ${BASE_SHA} did not complete in time"
+            exit 1
+          fi
+
+          if [ "${conclusion}" != "success" ]; then
+            echo "::error::Retag run ${url} for base commit ${BASE_SHA} ended with ${conclusion}. Re-run it, then re-run this check."
+            exit 1
+          fi
+
+          echo "Retag run ${url} succeeded"
 
   changes:
     name: Detect changes
@@ -637,6 +710,7 @@ jobs:
       - docker-build
       - docker-publish
       - docker-attest
+      - release-base-container
     if: |
       !cancelled()
     steps:

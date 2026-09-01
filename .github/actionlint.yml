@@ -3,3 +3,9 @@ self-hosted-runner:
   labels:
     - "ubuntu-26.04"
     - "ubuntu-26.04-arm"
+
+paths:
+  .github/workflows/*.yml:
+    ignore:
+      # actionlint does not recognize `$/` in `uses:` yet (rhysd/actionlint#732)
+      - 'reusable workflow call "\$/[^"]+" at "uses" is not following the format'

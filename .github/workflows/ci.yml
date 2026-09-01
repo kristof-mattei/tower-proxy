@@ -51,7 +51,7 @@ jobs:
   rust-build:
     name: Build Rust code
     if: ${{ !startsWith(github.head_ref, 'release/') }}
-    uses: ./.github/workflows/rust.yml
+    uses: $/.github/workflows/rust.yml
     permissions:
       checks: write # publish-unit-test-result-action creates a check run
       contents: read

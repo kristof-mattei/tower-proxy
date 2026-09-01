@@ -1,4 +1,3 @@
-adduser
 appgroup
 appuser
 artipacked
@@ -30,7 +29,6 @@ mypy
 nakata
 nativetls
 nextest
-nvmrc
 oneshot
 pathbuf
 postprocessors
@@ -40,6 +38,7 @@ pyflakes
 replacen
 retag
 retagging
+rhysd
 rustdocflags
 rustflags
 samply

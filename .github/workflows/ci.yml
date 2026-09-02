@@ -207,6 +207,10 @@ jobs:
         id: version
         run: |
           latest_tag=$(git describe --tags --abbrev=0 || true)
+
+          # The release branch contains .cliffignore and git-cliff applies it to --bumped-version as well, which would leave the hidden commits out of the version.
+          rm --force .cliffignore
+
           bumped=$(git-cliff --bumped-version --unreleased --offline)
 
           # If git-cliff didn't bump (e.g. chore/ci only commits), force a patch increment

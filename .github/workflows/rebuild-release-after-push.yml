@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+name: Rebuild release after push
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: "${{ github.workflow }}"
+  cancel-in-progress: true # the newer run dispatches for every open release PR against the newer main
+
+permissions:
+  contents: read
+
+jobs:
+  rebuild:
+    name: Dispatch Release
+    runs-on: ubuntu-26.04
+    permissions:
+      actions: write # to dispatch the Release workflow
+      pull-requests: read # to list open release PRs and the PR merged by this push
+    steps:
+      - name: Dispatch Release for every open release PR
+        shell: bash
+        env:
+          GH_REPO: ${{ github.repository }} # no checkout, so gh cannot infer the repository from a git remote
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          # When the push merged a release PR, Graduate Release is closing the other release PRs, and a dispatch now would rebuild them.
+          merged_release_prs=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/pulls" \
+            --jq '[.[] | select(.merged_at != null and (.head.ref | startswith("release/v")))] | length')
+
+          if [ "${merged_release_prs}" -ne 0 ]; then
+            echo "::notice::Release PR merged, nothing to rebuild"
+            exit 0
+          fi
+
+          # Release's concurrency group is keyed on the pre-release type, so a second dispatch of the same type would just queue.
+          # release/v1.2.3 -> none, release/v1.2.3-alpha.1 -> alpha
+          gh pr list \
+            --state open \
+            --limit 100 \
+            --json headRefName \
+          | jq --raw-output --arg re '-(?<type>alpha|beta|rc)\.[0-9]+$' '
+              [ .[]
+                | select(.headRefName | startswith("release/v"))
+                | (.headRefName | if test($re) then capture($re).type else "none" end)
+              ]
+              | unique[]
+            ' \
+          | while read -r prerelease; do
+            echo "::notice::Dispatching Release with prerelease=${prerelease}"
+
+            gh workflow run release.yml \
+              --ref main \
+              --raw-field prerelease="${prerelease}"
+          done

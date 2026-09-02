@@ -6,6 +6,7 @@ barfoo
 bkeepers
 buildcache
 cinstrument
+cliffignore
 ctarget
 cves
 docsrs
@@ -20,12 +21,10 @@ healthz
 hubot
 idents
 kristof
-lldb
 masato
 mattei
 monomorphization
 multiplatform
-mypy
 nakata
 nativetls
 nextest
@@ -35,6 +34,7 @@ postprocessors
 prereleased
 profraw
 pyflakes
+rawfile
 replacen
 retag
 retagging
@@ -45,6 +45,7 @@ samply
 sccache
 skopeo
 skopeo's
+slurpfile
 startswith
 striptags
 taiki

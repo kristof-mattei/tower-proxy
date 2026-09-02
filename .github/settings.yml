@@ -157,6 +157,8 @@ rulesets:
               integration_id: 15368
             - context: Spellcheck
               integration_id: 15368
+            - context: Verify changelog selection
+              integration_id: 15368
             - context: Zizmor
               integration_id: 15368
       - type: pull_request

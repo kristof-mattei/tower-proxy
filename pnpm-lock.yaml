@@ -11,15 +11,9 @@ importers:
       cspell:
         specifier: 10.2.0
         version: 10.2.0
-      prettier:
-        specifier: 3.9.6
-        version: 3.9.6
-      prettier-plugin-sh:
-        specifier: 0.19.0
-        version: 0.19.0(prettier@3.9.6)
-      prettier-plugin-toml:
-        specifier: 2.0.6
-        version: 2.0.6(prettier@3.9.6)
+      oxfmt:
+        specifier: 0.66.0
+        version: 0.66.0
 
 packages:
 
@@ -257,36 +251,127 @@ packages:
     resolution: {integrity: sha512-TIgG/pCkgo3SiayAbV0CorYPdnaNkYWfJFKHhSBTKIdBDwK4YwcbbDlXWGCTJ6gxhhwnrNhcw4jDjz8jejKS4A==}
     engines: {node: '>=22.18.0'}
 
-  '@reteps/dockerfmt-darwin-arm64@0.5.4':
-    resolution: {integrity: sha512-urMqV+dQyvVI8/WrXwClX9e1PEyS35wFdwJjpZYmL09AkV4Io5U1oam8UBKK7jZk0+YsdF88ay6e86Kn6DIyQg==}
+  '@oxfmt/binding-android-arm-eabi@0.66.0':
+    resolution: {integrity: sha512-2Me9eoptv6ERdEuI2P8AOlYdHHraXebJaM6SC0kc2Dfb+mLrep2db+fedBPKaYn673h/vBgvP4tkOdAbaudX6w==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm]
+    os: [android]
+
+  '@oxfmt/binding-android-arm64@0.66.0':
+    resolution: {integrity: sha512-u7O+bSSF0HGsDKkQQxBqvLGVepu93RA+JKu+ONqvfh4sCnCEbj31wZj4iG5gk3XfRwrmYj0/8catkO2LcblQKQ==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [android]
+
+  '@oxfmt/binding-darwin-arm64@0.66.0':
+    resolution: {integrity: sha512-/ikyMIVjX/sdo7KtjxoEsSUosfPzveVhT9RWMx9yGqFDKFJ89JAEKuEeLBmurDjrkb4w8tOnAdSO3SBaplY3bw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [darwin]
 
-  '@reteps/dockerfmt-darwin-x64@0.5.4':
-    resolution: {integrity: sha512-fJORy6DFxbgDiMqxpLTPZlb5KUY0Vq0iR4NGnyKnuYZ9LdZUS508DK2kt/AJ87/jIKNV1qRG0JXG1Tc6xdvWjw==}
+  '@oxfmt/binding-darwin-x64@0.66.0':
+    resolution: {integrity: sha512-q5xUsKeFqawa9NXa6ZGXWimFV19m8MogKPdTaSVDAAk2EQKBmBZRDeluwcl1p8ty/OFc9s9888OKEh3xfPVH0g==}
+    engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [darwin]
 
-  '@reteps/dockerfmt-linux-arm64@0.5.4':
-    resolution: {integrity: sha512-6pVakO06eXtDuvxy1Dnjs/gQyUoGGycle8PRSt5IFRwLi/AVaOQwfkfmW0WP8VH9wNUeti6BfJ3ksTn2G+XMxg==}
+  '@oxfmt/binding-freebsd-x64@0.66.0':
+    resolution: {integrity: sha512-CR+x4VzMY0pRXLK/xFQ/RzsSFkP5t2Z2mef0QY6OP/rTRcMUoMLCOM62/3Fp/t0K+UDoBKxvMyeb6D0zPMjleA==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
+    os: [freebsd]
+
+  '@oxfmt/binding-linux-arm-gnueabihf@0.66.0':
+    resolution: {integrity: sha512-ZEYmO/LbH9tTQCADILHGZE4GeOXOAj2VzedHkASNwjmwlwtutJCLpCJbIs37wRGTFgWRoEcD72jpMX+IBJUGjQ==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm]
+    os: [linux]
+
+  '@oxfmt/binding-linux-arm-musleabihf@0.66.0':
+    resolution: {integrity: sha512-hNtR9/oU0CeTkq7JnRkmBQwqe17v2ZaAMLC4VcN7IIOWeRyWDk0knSPWS9iiLmtbZ2RRBBtsG01jQgkZmKCJeQ==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm]
+    os: [linux]
+
+  '@oxfmt/binding-linux-arm64-gnu@0.66.0':
+    resolution: {integrity: sha512-uwOVQ8i6I1LT/+eDzfsgrrcZp8Fn6NPVUPn8fF5gdFGekFf0PddF+LEuwsD0/pbNUcKZhDj2rQ5UpITh9gF4iQ==}
+    engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [linux]
+    libc: [glibc]
 
-  '@reteps/dockerfmt-linux-x64@0.5.4':
-    resolution: {integrity: sha512-OD6SIlUV1D4TgJoTui3FMBAZsGbTSPYsiT0BKhD6jMUcJb3GpFTa7dY9rL8rP9FUqfL7OTHVUGUOL4Rh64Olog==}
+  '@oxfmt/binding-linux-arm64-musl@0.66.0':
+    resolution: {integrity: sha512-tTkF2Dmx4nGAjmBlZb+UtTGqR/EK4ZrW9qBfzte07a9XWqzoGGKzpFFlyNDhQe+Uwql94+ReCTeNbhOXscw1Dg==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [linux]
+    libc: [musl]
+
+  '@oxfmt/binding-linux-ppc64-gnu@0.66.0':
+    resolution: {integrity: sha512-F3cKHUav4yXOHn6GFnwpBhSYsJOYKKf9eqO/9jlEuqPxNw9zb98E9ZFct79gcg8pibUGkbveEu9WDlmXJpDzKw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [ppc64]
+    os: [linux]
+    libc: [glibc]
+
+  '@oxfmt/binding-linux-riscv64-gnu@0.66.0':
+    resolution: {integrity: sha512-K5fDaNZfDyQMYA/3qL21bqyN0X9T15LLwwbFPt2aHc94+ZG7bh0vZEsy2y7NlRnjjHFSwN+Hzg6ldJtbOriH4Q==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [riscv64]
+    os: [linux]
+    libc: [glibc]
+
+  '@oxfmt/binding-linux-riscv64-musl@0.66.0':
+    resolution: {integrity: sha512-44Yc+I+qOmTElRcEhm5hUKIUJEQIOugymz4ua4tB0Wox7tGAfIbjzmXz/HDAtw1Ij6gmBwZlzh4hc9679RhWeA==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [riscv64]
+    os: [linux]
+    libc: [musl]
+
+  '@oxfmt/binding-linux-s390x-gnu@0.66.0':
+    resolution: {integrity: sha512-1e29Eg9hEj2kRBB19M0seIehPbbXHCk35GvImjDvb79rjjYjXCRmtbUNHJcgoktZAMIzXrTbxDBKmTc1V4bg3A==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [s390x]
+    os: [linux]
+    libc: [glibc]
+
+  '@oxfmt/binding-linux-x64-gnu@0.66.0':
+    resolution: {integrity: sha512-vODY1UQo10gngn0+D4xHKU84F1Twm1LqrzV4SqPXvmQKSd87paehvZ6jqA5wKs6XQrlWul9clYMDVHcoW9CPMA==}
+    engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [linux]
+    libc: [glibc]
 
-  '@reteps/dockerfmt@0.5.4':
-    resolution: {integrity: sha512-HEGgXVVOb+JtGUSSzXl/XPKFIZjMDTUoHarCjaQdkY+cb5M9K/O3b5xm+x0IPIk3SfHurbc0bSgcFsQlzjitxA==}
-    engines: {node: ^v12.20.0 || ^14.13.0 || >=16.0.0}
-    hasBin: true
+  '@oxfmt/binding-linux-x64-musl@0.66.0':
+    resolution: {integrity: sha512-YDzXx2JsT4+HL4MdkVrYjO55NS5lUKNm8rLC4ZPou8+seu0v0jhecSh+ufoO6+xEa8gccEezMlI2WHJi4ApUgw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
+    os: [linux]
+    libc: [musl]
 
-  '@taplo/core@0.2.0':
-    resolution: {integrity: sha512-r8bl54Zj1In3QLkiW/ex694bVzpPJ9EhwqT9xkcUVODnVUGirdB1JTsmiIv0o1uwqZiwhi8xNnTOQBRQCpizrQ==}
+  '@oxfmt/binding-openharmony-arm64@0.66.0':
+    resolution: {integrity: sha512-mJjUYd8lj0+j4JkYyEM+5qKBf1Rnrpgjn/SVYKJhicVDqLz566ooa7Fs8zflPqt+dnZDV7X054rVIQX6ZcQNlQ==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [openharmony]
 
-  '@taplo/lib@0.5.0':
-    resolution: {integrity: sha512-+xIqpQXJco3T+VGaTTwmhxLa51qpkQxCjRwezjFZgr+l21ExlywJFcDfTrNmL6lG6tqb0h8GyJKO3UPGPtSCWg==}
+  '@oxfmt/binding-win32-arm64-msvc@0.66.0':
+    resolution: {integrity: sha512-soV+0vESv7e5ntCHWC61x4gg8OSak6IHHnWsZmHrJFlvMj2AK+kmldErCNkVkrvc1Ts2/++rJXn+IuAb2WMXhw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [win32]
+
+  '@oxfmt/binding-win32-ia32-msvc@0.66.0':
+    resolution: {integrity: sha512-YCPi23uRIEYuIKTZohAkKbPFpujQ5QBuUM5iDv+UqbCmTPAkaFsxjsSuB8xlBpRT0G7eP/4HMF+cPDSqHtOD9A==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [ia32]
+    os: [win32]
+
+  '@oxfmt/binding-win32-x64-msvc@0.66.0':
+    resolution: {integrity: sha512-bwTQcv/JVRPkOqQtMF0X7vpvpncDQiBcXHxZ9S2hR12Hlo8bvBdUR5x5XnxzDZ3kM0qoZw1rv7KaD66Ly+pFWA==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
+    os: [win32]
 
   ansi-regex@6.3.0:
     resolution: {integrity: sha512-WpDfL7NO6j7tH88IDBNVdUJxDh9nmCteAVW9dsep846XdwF4naCBK+/tGLX3KJgcpgMRXCFlTM2hKGoK9FsdrQ==}
@@ -407,26 +492,22 @@ packages:
     resolution: {integrity: sha512-4SrR7AdnY11LHfDKTZY1u6Ga3RuxZdl3YKWWShO5iyuG5h8QS4GD2tOb04peBJ5I7pXbR+CGBNEhTcwK+FzN3g==}
     engines: {node: '>=20'}
 
+  oxfmt@0.66.0:
+    resolution: {integrity: sha512-FfvqR8RFtV6JJpRrpkfqyVCQ7HDvZ/VriWFx7veftCgL1B5ZO9qNr+1rvPieycMQnNfVG0PWyJQiy7p0hq1I5w==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    hasBin: true
+    peerDependencies:
+      svelte: ^5.0.0
+      vite-plus: '*'
+    peerDependenciesMeta:
+      svelte:
+        optional: true
+      vite-plus:
+        optional: true
+
   picomatch@4.0.7:
     resolution: {integrity: sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA==}
     engines: {node: '>=12'}
-
-  prettier-plugin-sh@0.19.0:
-    resolution: {integrity: sha512-39VXFZH/cOGtcuu8aeSvqp/hhwomOR4QroZUj+jBz2cNb3os9s0sqFZSNlYts6jdtLLDU7D2YT3Z1+abtb7adQ==}
-    engines: {node: '>=16.0.0'}
-    peerDependencies:
-      prettier: ^3.6.0
-
-  prettier-plugin-toml@2.0.6:
-    resolution: {integrity: sha512-12N/wBuHa9jd/KVy9pRP20NMKxQfQLMseQCt66lIbLaPLItvGUcSIryE1eZZMJ7loSws6Ig3M2Elc2EreNh76w==}
-    engines: {node: '>=16.0.0'}
-    peerDependencies:
-      prettier: ^3.0.3
-
-  prettier@3.9.6:
-    resolution: {integrity: sha512-OpN0zzVdiaiAhxpuuj5efpIS4sY9j7bY6uR5mnj5yPzGkdkjNKSJeUThPb60Jw29QuAZgA4o+/iB49kFiaBX6g==}
-    engines: {node: '>=14'}
-    hasBin: true
 
   resolve-from@5.0.0:
     resolution: {integrity: sha512-qYg9KP24dD5qka9J47d0aVky0N+b4fTU89LN9iDnjB5waksiC49rvMB0PrUJQGoTmH50XPiqOvAjDfaijGxYZw==}
@@ -437,10 +518,6 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
-  sh-syntax@0.6.0:
-    resolution: {integrity: sha512-52VK6z/cdZHv7UURjIcwfBUQZrAhIEEe0bY4lrkfypjnFIKsDZdD3Uaz/dBiw/sF8BeX0Mssv140s8EnrsJ9dQ==}
-    engines: {node: '>=16.0.0'}
-
   smol-toml@1.8.0:
     resolution: {integrity: sha512-kCZr2V3ch9i00x8zXRhjUNVcjG9ijES5dDudkXvUVCT5QlJNQWElSJdZqyPemffHoLNUYwOcou0Fy+ojN0uHSQ==}
     engines: {node: '>= 18'}
@@ -448,6 +525,10 @@ packages:
   tinyglobby@0.2.17:
     resolution: {integrity: sha512-wXR/dYpcqKmfWpEdZjiKJOwCNFndD0DMnrW/cYjVGttEkBfVgcLFHoNrlj47mjOVic9yyNu65alsgF4NQyTa2g==}
     engines: {node: '>=12.0.0'}
+
+  tinypool@2.1.0:
+    resolution: {integrity: sha512-Pugqs6M0m7Lv1I7FtxN4aoyToKg1C4tu+/381vH35y8oENM/Ai7f7C4StcoK4/+BSw9ebcS8jRiVrORFKCALLw==}
+    engines: {node: ^20.0.0 || >=22.0.0}
 
   vscode-languageserver-textdocument@1.0.14:
     resolution: {integrity: sha512-EQyqJMi552E4ZTf46izQ4Fj6XquqxCySR3J5ZSD1SisMf6RfpeOWHxGBE8Gr6V0/3GHIGdAzDn8F8+1nTGCnoQ==}
@@ -688,30 +769,62 @@ snapshots:
 
   '@cspell/url@10.2.0': {}
 
-  '@reteps/dockerfmt-darwin-arm64@0.5.4':
+  '@oxfmt/binding-android-arm-eabi@0.66.0':
     optional: true
 
-  '@reteps/dockerfmt-darwin-x64@0.5.4':
+  '@oxfmt/binding-android-arm64@0.66.0':
     optional: true
 
-  '@reteps/dockerfmt-linux-arm64@0.5.4':
+  '@oxfmt/binding-darwin-arm64@0.66.0':
     optional: true
 
-  '@reteps/dockerfmt-linux-x64@0.5.4':
+  '@oxfmt/binding-darwin-x64@0.66.0':
     optional: true
 
-  '@reteps/dockerfmt@0.5.4':
-    optionalDependencies:
-      '@reteps/dockerfmt-darwin-arm64': 0.5.4
-      '@reteps/dockerfmt-darwin-x64': 0.5.4
-      '@reteps/dockerfmt-linux-arm64': 0.5.4
-      '@reteps/dockerfmt-linux-x64': 0.5.4
+  '@oxfmt/binding-freebsd-x64@0.66.0':
+    optional: true
 
-  '@taplo/core@0.2.0': {}
+  '@oxfmt/binding-linux-arm-gnueabihf@0.66.0':
+    optional: true
 
-  '@taplo/lib@0.5.0':
-    dependencies:
-      '@taplo/core': 0.2.0
+  '@oxfmt/binding-linux-arm-musleabihf@0.66.0':
+    optional: true
+
+  '@oxfmt/binding-linux-arm64-gnu@0.66.0':
+    optional: true
+
+  '@oxfmt/binding-linux-arm64-musl@0.66.0':
+    optional: true
+
+  '@oxfmt/binding-linux-ppc64-gnu@0.66.0':
+    optional: true
+
+  '@oxfmt/binding-linux-riscv64-gnu@0.66.0':
+    optional: true
+
+  '@oxfmt/binding-linux-riscv64-musl@0.66.0':
+    optional: true
+
+  '@oxfmt/binding-linux-s390x-gnu@0.66.0':
+    optional: true
+
+  '@oxfmt/binding-linux-x64-gnu@0.66.0':
+    optional: true
+
+  '@oxfmt/binding-linux-x64-musl@0.66.0':
+    optional: true
+
+  '@oxfmt/binding-openharmony-arm64@0.66.0':
+    optional: true
+
+  '@oxfmt/binding-win32-arm64-msvc@0.66.0':
+    optional: true
+
+  '@oxfmt/binding-win32-ia32-msvc@0.66.0':
+    optional: true
+
+  '@oxfmt/binding-win32-x64-msvc@0.66.0':
+    optional: true
 
   ansi-regex@6.3.0: {}
 
@@ -852,26 +965,35 @@ snapshots:
 
   is-safe-filename@0.1.1: {}
 
+  oxfmt@0.66.0:
+    dependencies:
+      tinypool: 2.1.0
+    optionalDependencies:
+      '@oxfmt/binding-android-arm-eabi': 0.66.0
+      '@oxfmt/binding-android-arm64': 0.66.0
+      '@oxfmt/binding-darwin-arm64': 0.66.0
+      '@oxfmt/binding-darwin-x64': 0.66.0
+      '@oxfmt/binding-freebsd-x64': 0.66.0
+      '@oxfmt/binding-linux-arm-gnueabihf': 0.66.0
+      '@oxfmt/binding-linux-arm-musleabihf': 0.66.0
+      '@oxfmt/binding-linux-arm64-gnu': 0.66.0
+      '@oxfmt/binding-linux-arm64-musl': 0.66.0
+      '@oxfmt/binding-linux-ppc64-gnu': 0.66.0
+      '@oxfmt/binding-linux-riscv64-gnu': 0.66.0
+      '@oxfmt/binding-linux-riscv64-musl': 0.66.0
+      '@oxfmt/binding-linux-s390x-gnu': 0.66.0
+      '@oxfmt/binding-linux-x64-gnu': 0.66.0
+      '@oxfmt/binding-linux-x64-musl': 0.66.0
+      '@oxfmt/binding-openharmony-arm64': 0.66.0
+      '@oxfmt/binding-win32-arm64-msvc': 0.66.0
+      '@oxfmt/binding-win32-ia32-msvc': 0.66.0
+      '@oxfmt/binding-win32-x64-msvc': 0.66.0
+
   picomatch@4.0.7: {}
-
-  prettier-plugin-sh@0.19.0(prettier@3.9.6):
-    dependencies:
-      '@reteps/dockerfmt': 0.5.4
-      prettier: 3.9.6
-      sh-syntax: 0.6.0
-
-  prettier-plugin-toml@2.0.6(prettier@3.9.6):
-    dependencies:
-      '@taplo/lib': 0.5.0
-      prettier: 3.9.6
-
-  prettier@3.9.6: {}
 
   resolve-from@5.0.0: {}
 
   semver@7.8.5: {}
-
-  sh-syntax@0.6.0: {}
 
   smol-toml@1.8.0: {}
 
@@ -879,6 +1001,8 @@ snapshots:
     dependencies:
       fdir: 6.5.0(picomatch@4.0.7)
       picomatch: 4.0.7
+
+  tinypool@2.1.0: {}
 
   vscode-languageserver-textdocument@1.0.14: {}
 

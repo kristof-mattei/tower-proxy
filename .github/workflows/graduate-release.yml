@@ -55,6 +55,43 @@ jobs:
           persist-credentials: true
           show-progress: false
 
+      - name: Fetch the final ballot
+        id: final-ballot
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          # A toggle made just before the merge may be missing from the event payload, so the body is fetched live
+          delimiter=$(openssl rand -hex 16)
+
+          {
+            echo "body<<${delimiter}"
+            gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.body // ""'
+            echo "${delimiter}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Compute selection from the final ballot
+        id: ballot
+        uses: $/.github/actions/compute-changelog-selection
+        with:
+          body: ${{ steps.final-ballot.outputs.body }}
+          head: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Compare the merged .cliffignore with the final ballot
+        shell: bash
+        env:
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          SELECTION_FILE: ${{ steps.ballot.outputs.selection-file }}
+        run: |
+          git show "${MERGE_SHA}:.cliffignore" > "${RUNNER_TEMP}/merged.cliffignore" 2> /dev/null || true
+
+          if ! cmp --silent "${SELECTION_FILE}" "${RUNNER_TEMP}/merged.cliffignore"; then
+            # The merged commit cannot change, so a toggle made after the last rebuild is either reverted in the body or applied in the next release
+            echo "::error::The final ballot does not match the merged .cliffignore. Revert the late toggles in the PR body and re-run this workflow, or apply them in the next release."
+            exit 1
+          fi
+
       - name: Create tag
         shell: bash
         env:

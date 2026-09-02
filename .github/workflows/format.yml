@@ -43,7 +43,7 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
 
-      - name: Run Prettier
+      - name: Run oxfmt
         shell: bash
         run: |
-          pnpm prettier --list-different .
+          pnpm exec oxfmt --check

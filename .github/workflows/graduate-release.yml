@@ -55,27 +55,12 @@ jobs:
           persist-credentials: true
           show-progress: false
 
-      - name: Fetch the final ballot
-        id: final-ballot
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          # A toggle made just before the merge may be missing from the event payload, so the body is fetched live
-          delimiter=$(openssl rand -hex 16)
-
-          {
-            echo "body<<${delimiter}"
-            gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.body // ""'
-            echo "${delimiter}"
-          } >> "${GITHUB_OUTPUT}"
-
       - name: Compute selection from the final ballot
         id: ballot
         uses: $/.github/actions/compute-changelog-selection
         with:
-          body: ${{ steps.final-ballot.outputs.body }}
+          pull-request: ${{ github.event.pull_request.number }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           head: ${{ github.event.pull_request.merge_commit_sha }}
 
       - name: Compare the merged .cliffignore with the final ballot

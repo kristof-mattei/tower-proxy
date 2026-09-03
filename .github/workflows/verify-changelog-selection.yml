@@ -22,6 +22,9 @@ jobs:
   verify:
     name: Verify changelog selection
     runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      pull-requests: read # to read the live PR body
     # The check is required on every PR, and a skipped job satisfies it on the PRs without a ballot
     if: startsWith(github.event.pull_request.head.ref, 'release/v')
     steps:
@@ -92,11 +95,12 @@ jobs:
 
           echo "::notice::${checked} changelog entries"
 
-      - name: Compute selection from the PR body
+      - name: Compute selection from the live PR body
         id: ballot
         uses: $/.github/actions/compute-changelog-selection
         with:
-          body: ${{ github.event.pull_request.body }}
+          pull-request: ${{ github.event.pull_request.number }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Compare with the committed .cliffignore
         shell: bash

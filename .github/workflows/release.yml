@@ -15,7 +15,7 @@ on:
           - rc
 
 concurrency:
-  # Same group as the apply workflow for this pre-release type, because both force-push the release branch and rewrite the PR body
+  # Same group as the apply workflow for this pre-release type, because both force-push the release branch
   group: "release-${{ inputs.prerelease }}"
   cancel-in-progress: false # this job force-pushes branches and opens PRs, let it finish
 
@@ -198,29 +198,31 @@ jobs:
       - name: Write .cliffignore and generate the changelog
         shell: bash
         env:
+          BRANCH: ${{ steps.release.outputs.branch }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # git-cliff reads GITHUB_TOKEN from the environment
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH: ${{ steps.release.outputs.branch }}
           RELEASE_VERSION: ${{ steps.release.outputs.release_version }}
           SIBLINGS_FILE: ${{ steps.siblings.outputs.file }}
         run: |
           # Only a checked entry appears in the changelog, so every unreleased commit starts excluded
           jq --raw-output '.[0].commits[].id' ballot-context.json | sort --unique > "${RUNNER_TEMP}/unreleased.txt"
 
-          # Checked entries carry over from an earlier run of this release and from the release PRs this run supersedes. Their CHANGELOG.md lists only the checked entries.
+          # Checked entries carry over from the live bodies of the open release PRs of this type, including the PR of this branch. A toggle is in the body before the rebuild puts it in CHANGELOG.md, so the body is the source.
           : > "${RUNNER_TEMP}/checked.txt"
 
-          {
-            if git ls-remote --exit-code --heads origin "${BRANCH}" > /dev/null; then
-              echo "${BRANCH}"
-            fi
+          while read -r pr_number _; do
+            gh api "repos/${GITHUB_REPOSITORY}/pulls/${pr_number}" --jq '.body // ""' \
+              | grep --perl-regexp --only-matching '^- \[[xX]\] .*/commit/\K[0-9a-f]{40}(?=\)\)\r?$)' >> "${RUNNER_TEMP}/checked.txt" || true
+          done < "${SIBLINGS_FILE}"
 
-            cut --delimiter=" " --fields=2 "${SIBLINGS_FILE}"
-          } | sort --unique | while IFS= read -r source_branch; do
-            git fetch origin "refs/heads/${source_branch}"
+          # When the PR of a release branch was closed by hand, the body is gone and a toggle cannot be pending, so the branch's CHANGELOG.md is the latest selection
+          if ! cut --delimiter=" " --fields=2 "${SIBLINGS_FILE}" | grep --quiet --fixed-strings --line-regexp "${BRANCH}" \
+            && git ls-remote --exit-code --heads origin "${BRANCH}" > /dev/null; then
+            git fetch origin "refs/heads/${BRANCH}"
             git show "FETCH_HEAD:CHANGELOG.md" 2> /dev/null \
               | grep --perl-regexp --only-matching '/commit/\K[0-9a-f]{40}(?=\)\)$)' >> "${RUNNER_TEMP}/checked.txt" || true
-          done
+          fi
 
           # Exclusions accumulate across releases, so the copy on main is the starting point
           git show HEAD:.cliffignore > .cliffignore 2> /dev/null || : > .cliffignore
@@ -246,7 +248,7 @@ jobs:
         uses: $/.github/actions/render-ballot-body
         with:
           context-file: ballot-context.json
-          compare-to: ${{ steps.commit.outputs.commit-sha }}
+          compare-to: ${{ steps.release.outputs.branch }}
           excluded-file: .cliffignore
 
       - name: Open or update pull request

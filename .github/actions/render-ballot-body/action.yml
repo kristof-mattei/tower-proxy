@@ -7,7 +7,7 @@ inputs:
     description: git-cliff context JSON listing every entry, including the excluded ones
     required: true
   compare-to:
-    description: Commit the changelog's compare link points at
+    description: Ref the changelog's compare link points at
     required: true
   excluded-file:
     description: File of commit SHAs to render unchecked. When empty or missing, every entry stays checked.
@@ -32,7 +32,7 @@ runs:
       run: |
         body_file="${RUNNER_TEMP}/ballot-body.md"
 
-        # The release tag does not exist until the PR is merged, so the compare link points at the release commit instead
+        # The release tag does not exist until the PR is merged, so the compare link points at the release branch instead
         jq --arg sha "${COMPARE_TO}" '.[0].extra = {compare_to: $sha}' "${CONTEXT_FILE}" > "${RUNNER_TEMP}/diff-context.json"
 
         # The context was built without .cliffignore, so the ballot lists every commit, including the ones CHANGELOG.md excludes

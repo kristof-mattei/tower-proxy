@@ -17,12 +17,12 @@ jobs:
     runs-on: ubuntu-26.04
     permissions:
       contents: write # to rebuild the release commit via createCommitOnBranch
-      pull-requests: write # to refresh the release PR body
-    # Same group as the Release workflow for this pre-release type, because both force-push the release branch and rewrite the PR body.
+      pull-requests: read # to read the live PR body
+    # Same group as the Release workflow for this pre-release type, because both force-push the release branch.
     # The group is on the job so that an edit to a non-release PR is skipped without entering it.
     concurrency:
       group: "release-${{ (contains(github.event.pull_request.head.ref, '-alpha.') && 'alpha') || (contains(github.event.pull_request.head.ref, '-beta.') && 'beta') || (contains(github.event.pull_request.head.ref, '-rc.') && 'rc') || 'none' }}"
-      cancel-in-progress: false # a cancelled run could stop between the force-push and the PR body update
+      cancel-in-progress: false # a newer run would also cancel a Release run in the same group
     if: |
       github.event.pull_request.state == 'open' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
@@ -45,11 +45,12 @@ jobs:
         with:
           tool: git-cliff
 
-      - name: Compute selection from the PR body
+      - name: Compute selection from the live PR body
         id: ballot
         uses: $/.github/actions/compute-changelog-selection
         with:
-          body: ${{ github.event.pull_request.body }}
+          pull-request: ${{ github.event.pull_request.number }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Compare with the committed .cliffignore
         shell: bash
@@ -80,10 +81,6 @@ jobs:
           TAG: ${{ steps.selection.outputs.tag }}
           SELECTION_FILE: ${{ steps.ballot.outputs.selection-file }}
         run: |
-          # git-cliff applies .cliffignore to --context as well, which would leave the hidden commits off the ballot
-          rm --force .cliffignore
-          git-cliff --context --unreleased --tag "${TAG}" > ballot-context.json
-
           # The release commit has to overwrite the .cliffignore inherited from main, so the file is copied even when empty
           cp "${SELECTION_FILE}" .cliffignore
 
@@ -101,27 +98,6 @@ jobs:
           staging-suffix: -selection-staging
           # GITHUB_TOKEN attributes the commit to github-actions[bot]
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Render the ballot
-        id: ballot-body
-        if: steps.selection.outputs.changed == 'true'
-        uses: $/.github/actions/render-ballot-body
-        with:
-          context-file: ballot-context.json
-          compare-to: ${{ steps.commit.outputs.commit-sha }}
-          excluded-file: .cliffignore
-
-      - name: Refresh pull request body
-        if: steps.selection.outputs.changed == 'true'
-        shell: bash
-        env:
-          # An edit made with GITHUB_TOKEN does not fire pull_request events, so this update does not trigger this workflow again
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          BODY_FILE: ${{ steps.ballot-body.outputs.body-file }}
-        run: |
-          # gh pr edit needs read:org even for --body (cli/cli#13575), so the body is set with a REST PATCH
-          gh api --method PATCH --silent "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --field "body=@${BODY_FILE}"
 
       - name: Clean up stranded staging branch
         if: failure() || cancelled()

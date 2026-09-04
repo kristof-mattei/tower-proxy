@@ -11,6 +11,8 @@ repo = "tower-proxy"
 header = """
 <!-- header goes here -->
 """
+# Used by `--prepend` to remove the previous header.
+header_marker = "<!-- git-cliff: end of header -->"
 # A Tera template to be rendered for each release in the changelog.
 # See https://keats.github.io/tera/#getting-started
 body = """
@@ -37,11 +39,11 @@ body = """
 {% else %}\
     ## [unreleased]
 {% endif %}\
-{% for group, commits in commits | group_by(attribute="group") %}
+{% for entry in commits | commit_groups(groups=commit_parsers_groups) %}
     {#- Renovate bumps the same crate multiple times per release. The version is the last word of the message, key on the rest and keep the newest. -#}
     {%- set_global seen = [] -%}
     {%- set_global dropped = [] -%}
-    {%- for commit in commits | filter(attribute="scope", value="deps") | filter(attribute="author.name", value="renovate[bot]") | reverse -%}
+    {%- for commit in entry.commits | filter(attribute="scope", value="deps") | filter(attribute="author.name", value="renovate[bot]") | reverse -%}
         {%- set key = commit.message | split(pat=" ") | slice(end=-1) | join(sep=" ") -%}
         {%- if key in seen -%}
             {%- set_global dropped = dropped | concat(with=commit.id) -%}
@@ -49,15 +51,15 @@ body = """
             {%- set_global seen = seen | concat(with=key) -%}
         {%- endif -%}
     {%- endfor %}
-    ### {{ group | striptags | trim | upper_first }}
-    {% for commit in commits
+    ### {{ entry.group | striptags | trim | upper_first }}
+    {% for commit in entry.commits
     | filter(attribute="scope")
     | sort(attribute="scope") %}
         {%- if commit.id not in dropped %}
             {{ self::print_commit(commit=commit) }}
         {%- endif %}
     {%- endfor %}
-    {% for commit in commits %}
+    {% for commit in entry.commits %}
         {%- if not commit.scope -%}
             {{ self::print_commit(commit=commit) }}
         {% endif -%}

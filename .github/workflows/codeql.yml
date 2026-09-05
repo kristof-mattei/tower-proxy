@@ -24,7 +24,7 @@ permissions:
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
-    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-26.04' }}
+    runs-on: ${{ (matrix.language == 'swift' && 'macos-26') || 'ubuntu-26.04' }}
     permissions:
       actions: read # codeql-action reads the workflow run's metadata
       contents: read

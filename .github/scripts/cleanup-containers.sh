@@ -70,7 +70,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --help                  Show this help message"
             echo ""
             echo "Note: --org and --user are mutually exclusive. One must be specified."
-            echo "Note: Images with the 'edge' or 'latest' tag will never be deleted."
+            echo "Note: Images with the 'edge' or 'latest' tag, or a release tag (vX.Y.Z), will never be deleted."
             echo "Note: Platform-specific images referenced by protected multi-platform manifests will not be deleted."
             exit 0
             ;;
@@ -225,6 +225,11 @@ has_edge_tag() {
 has_latest_tag() {
     local tags_json="$1"
     echo "$tags_json" | jq --exit-status '.[] | select(. == "latest")' > /dev/null 2>&1
+}
+
+has_release_tag() {
+    local tags_json="$1"
+    echo "$tags_json" | jq --exit-status '.[] | select(test("^v[0-9]+\\.[0-9]+\\.[0-9]+(-(alpha|beta|rc)\\.[0-9]+)?$"))' > /dev/null 2>&1
 }
 
 has_attestation_tag() {
@@ -394,11 +399,12 @@ for version_id in "${all_version_ids[@]}"; do
     digest="${version_digest[$version_id]:-}"
 
     # Check for permanently protected tags
-    if has_edge_tag "$tags" || has_latest_tag "$tags"; then
-        protected_versions["$version_id"]="has edge/latest tag"
+    # A release tag is added to the version the PR built, next to its pr-* tags, so the old PR rule below would delete released images
+    if has_edge_tag "$tags" || has_latest_tag "$tags" || has_release_tag "$tags"; then
+        protected_versions["$version_id"]="has edge/latest/release tag"
 
         if [[ -n "$digest" ]]; then
-            protected_digests["$digest"]="referenced by edge/latest tagged image"
+            protected_digests["$digest"]="referenced by edge/latest/release tagged image"
         fi
 
         # Fetch manifest to protect referenced platform-specific images

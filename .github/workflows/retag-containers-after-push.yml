@@ -251,3 +251,139 @@ jobs:
           platform: linux/arm64
           dockerhub-user: ${{ vars.DOCKERHUB_USERNAME }}
           dockerhub-password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  repo-has-deb:
+    name: Repo has deb?
+    runs-on: ubuntu-26.04
+    outputs:
+      has_deb: ${{ steps.determine.outputs.has_deb }}
+
+    steps:
+      - name: Repo publishes a Debian package?
+        id: determine
+        shell: bash
+        env:
+          HAS_DEB: ${{ vars.HAS_DEB }}
+        run: |
+          echo "has_deb=${HAS_DEB:-false}" >> "${GITHUB_OUTPUT}"
+
+  retag-deb:
+    name: Retag the Debian packages
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    permissions:
+      artifact-metadata: write # actions/attest
+      attestations: write # actions/attest
+      contents: read
+      id-token: write # actions/attest
+      packages: write # retag the debs in ghcr.io
+    needs:
+      - repo-has-deb
+    if: |
+      fromJSON(needs.repo-has-deb.outputs.has_deb) == true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          show-progress: false
+          fetch-depth: 2
+
+      - name: Resolve base and PR head SHAs
+        shell: bash
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          # push event, HEAD^2 is the tip of the incoming PR branch
+          echo "BASE_SHA=${BEFORE_SHA}" >> "${GITHUB_ENV}"
+
+          exit_code=0
+          parent2=$(git rev-parse "HEAD^2" --quiet 2>/dev/null) || exit_code=$?
+
+          if [ ${exit_code} -eq 0 ]
+          then
+            echo "The head of the incoming PR is ${parent2}"
+            echo "INCOMING_PR_HEAD_COMMIT=${parent2}" >> "${GITHUB_ENV}"
+          else
+            echo "The incoming push isn't a merge, ergo it's not a PR"
+          fi
+
+      - name: Set up ORAS
+        uses: oras-project/setup-oras@1d808f7d7f6995cc68b7bf507bfe5c5446e1dc9d # v2.0.1
+
+      - name: Set full deb artifact name
+        shell: bash
+        run: |
+          echo "FULL_DEB_NAME=${REGISTRY,,}/${IMAGE_NAME,,}-deb" >> "${GITHUB_ENV}"
+
+      - name: Log into registry ${{ env.REGISTRY }}
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          oras login "${REGISTRY,,}" --username "${GITHUB_ACTOR}" --password-stdin <<< "${GITHUB_TOKEN}"
+
+      - name: Find source tag and re-tag the debs
+        shell: bash
+        id: retag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_TAG: "pr-${{ env.BASE_SHA }}-${{ env.INCOMING_PR_HEAD_COMMIT }}"
+        run: |
+          repo_lower="${GITHUB_REPOSITORY,,}"
+
+          # the package doesn't exist before the first push, that's the bootstrap case below, so don't fail here
+          all_tags=$(gh api "/users/${GITHUB_REPOSITORY_OWNER}/packages/container/${repo_lower##*/}-deb/versions" \
+            --paginate \
+            --jq '.[] | .metadata.container.tags[]') || true
+
+          # search for the PR tag, there can only be zero or one match
+          pr_tag_found=$(grep --count "^${PR_TAG}\$" <<< "${all_tags}") || true
+
+          if [ "${pr_tag_found}" -eq 1 ]
+          then
+            echo "Incoming PR produced Debian packages"
+
+            old_tag="${PR_TAG}"
+            suffix=actual
+          else
+            # the incoming PR built no debs, so re-key the base commit's debs to the current sha, like the containers
+            echo "Incoming PR produced nothing, or there was just a push to main"
+
+            old_tag=$(grep "^sha-${BASE_SHA}-.*\$" <<< "${all_tags}" | head --lines 1) || true # .* is actual or retag
+
+            suffix=retag
+          fi
+
+          if [ -z "${old_tag}" ]
+          then
+            # no deb in the registry yet, the first PR that builds one starts the chain
+            echo "::notice::No Debian package found for ${PR_TAG} or base ${BASE_SHA}, skipping"
+            echo "found=false" >> "${GITHUB_OUTPUT}"
+
+            exit 0
+          fi
+
+          new_tag="sha-${GITHUB_SHA}-${suffix}"
+
+          oras tag "${FULL_DEB_NAME}:${old_tag}" "edge" "${new_tag}"
+
+          echo "found=true" >> "${GITHUB_OUTPUT}"
+          echo "new_tag=${new_tag}" >> "${GITHUB_OUTPUT}"
+
+      - name: Pull the Debian packages
+        if: fromJSON(steps.retag.outputs.found) == true
+        shell: bash
+        env:
+          NEW_TAG: ${{ steps.retag.outputs.new_tag }}
+        run: |
+          mkdir --parents /tmp/deb
+
+          oras pull "${FULL_DEB_NAME}:${NEW_TAG}" --output /tmp/deb
+
+      # same file hash as the build attestation, but signed by the push workflow, which proves the debs made it to main
+      - name: Attest Debian packages
+        if: fromJSON(steps.retag.outputs.found) == true
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: /tmp/deb/*.deb

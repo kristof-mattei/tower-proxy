@@ -64,7 +64,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PRERELEASE: ${{ inputs.prerelease }}
         run: |
-          # main contains the .cliffignore of the previous releases and git-cliff applies it to --bumped-version and --context as well, which would leave the hidden commits out of the version and off the ballot.
+          # git-cliff also applies .cliffignore to --bumped-version and --context, so main's copy from earlier releases would drop commits from the version bump and from the ballot
           rm --force .cliffignore
 
           latest_tag=$(git describe --tags --abbrev=0 || true)
@@ -168,7 +168,7 @@ jobs:
           main_sha=$(git rev-parse HEAD)
           echo "main_sha=${main_sha}" >> "${GITHUB_OUTPUT}"
 
-          # The ballot lists every commit, so the context is built before .cliffignore is written below
+          # build the context before writing .cliffignore below, the ballot has to list every commit
           git-cliff --context --unreleased --tag "${release_version}" > ballot-context.json
 
       - name: List open release PRs of this pre-release type
@@ -208,7 +208,7 @@ jobs:
           # Only a checked entry appears in the changelog, so every unreleased commit starts excluded
           jq --raw-output '.[0].commits[].id' ballot-context.json | sort --unique > "${RUNNER_TEMP}/unreleased.txt"
 
-          # Checked entries carry over from the live bodies of the open release PRs of this type, including the PR of this branch. A toggle is in the body before the rebuild puts it in CHANGELOG.md, so the body is the source.
+          # Take the checked entries from the live bodies of this type's open release PRs, this branch's PR included. A toggle shows up in the body first and only reaches CHANGELOG.md on the next rebuild, so the body wins.
           : > "${RUNNER_TEMP}/checked.txt"
 
           while read -r pr_number _; do
@@ -216,7 +216,7 @@ jobs:
               | grep --perl-regexp --only-matching '^- \[[xX]\] .*/commit/\K[0-9a-f]{40}(?=\)\)\r?$)' >> "${RUNNER_TEMP}/checked.txt" || true
           done < "${SIBLINGS_FILE}"
 
-          # When the PR of a release branch was closed by hand, the body is gone and a toggle cannot be pending, so the branch's CHANGELOG.md is the latest selection
+          # A release PR closed by hand has no body and no pending toggle left, so its branch's CHANGELOG.md is the latest selection
           if ! cut --delimiter=" " --fields=2 "${SIBLINGS_FILE}" | grep --quiet --fixed-strings --line-regexp "${BRANCH}" \
             && git ls-remote --exit-code --heads origin "${BRANCH}" > /dev/null; then
             git fetch origin "refs/heads/${BRANCH}"
@@ -287,8 +287,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SIBLINGS_FILE: ${{ steps.siblings.outputs.file }}
         run: |
-          # A commit landing after a release PR was opened can bump the version, which renames the release branch and leaves the old PR open.
-          # The checked entries of the old PR were carried over above.
+          # A commit that lands after the release PR opened can bump the version. That renames the release branch and leaves the old PR open.
+          # Its checked entries were picked up above.
           new_pr=$(gh pr list --head "${BRANCH}" --state open --json number --jq '.[0].number')
 
           while read -r pr_number head_ref; do
@@ -308,7 +308,7 @@ jobs:
           MAIN_SHA: ${{ steps.release.outputs.main_sha }}
           PRERELEASE: ${{ inputs.prerelease }}
         run: |
-          # A push landing between the checkout and the PR creation had no open release PR for "Rebuild release after push" to dispatch for.
+          # If main moved between the checkout and the PR creation, "Rebuild release after push" found no open release PR yet, so dispatch here instead
           current_main=$(git ls-remote origin refs/heads/main | cut --fields 1)
 
           if [ "${current_main}" = "${MAIN_SHA}" ]; then

@@ -21,6 +21,7 @@ healthz
 hubot
 idents
 kristof
+lintian
 masato
 mattei
 monomorphization

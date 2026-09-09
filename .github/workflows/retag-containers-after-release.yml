@@ -93,7 +93,7 @@ jobs:
         run: |
           repo_lower="${GITHUB_REPOSITORY,,}"
 
-          # the source tag is pushed by the push-triggered retag workflow, which may still be running, so poll
+          # the push-triggered retag workflow creates the source tag and may still be running, so poll for it
           OLD_TAG=""
 
           for attempt in $(seq 1 30); do
@@ -103,7 +103,7 @@ jobs:
 
             echo "Looking for source tag sha-${GITHUB_SHA}-* (attempt ${attempt} of 30)"
 
-            # || true: no match yet, or a transient api error, both mean retry
+            # no match yet and a transient api error both mean retry, so don't fail here
             OLD_TAG=$(gh api "/users/${GITHUB_REPOSITORY_OWNER}/packages/container/${repo_lower##*/}/versions" \
               --paginate \
               --jq '.[] | .metadata.container.tags[]' | grep "^sha-${GITHUB_SHA}-.*\$" | head --lines 1) || true # .* is actual or retag
@@ -205,3 +205,130 @@ jobs:
           platform: linux/arm64
           dockerhub-user: ${{ vars.DOCKERHUB_USERNAME }}
           dockerhub-password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  repo-has-deb:
+    name: Repo has deb?
+    runs-on: ubuntu-26.04
+    outputs:
+      has_deb: ${{ steps.determine.outputs.has_deb }}
+
+    steps:
+      - name: Repo publishes a Debian package?
+        id: determine
+        shell: bash
+        env:
+          HAS_DEB: ${{ vars.HAS_DEB }}
+        run: |
+          echo "has_deb=${HAS_DEB:-false}" >> "${GITHUB_OUTPUT}"
+
+  retag-deb:
+    name: Retag the Debian packages
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30 # the source tag poll below alone may take 15 minutes
+    permissions:
+      artifact-metadata: write # actions/attest
+      attestations: write # actions/attest
+      contents: read
+      id-token: write # actions/attest
+      packages: write # retag the debs in ghcr.io
+    needs:
+      - repo-has-deb
+    # the predicted version has no pre-release suffix, so pre-releases ship without debs
+    if: |
+      fromJSON(needs.repo-has-deb.outputs.has_deb) == true &&
+      !github.event.release.prerelease
+    steps:
+      - name: Set up ORAS
+        uses: oras-project/setup-oras@1d808f7d7f6995cc68b7bf507bfe5c5446e1dc9d # v2.0.1
+
+      - name: Set full deb artifact name
+        shell: bash
+        run: |
+          echo "FULL_DEB_NAME=${REGISTRY,,}/${IMAGE_NAME,,}-deb" >> "${GITHUB_ENV}"
+
+      - name: Log into registry ${{ env.REGISTRY }}
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          oras login "${REGISTRY,,}" --username "${GITHUB_ACTOR}" --password-stdin <<< "${GITHUB_TOKEN}"
+
+      - name: Find source tag in the registry
+        shell: bash
+        run: |
+          # the push-triggered retag workflow creates the source tag and may still be running, so poll for it
+          OLD_TAG=""
+
+          for attempt in $(seq 1 30); do
+            if ((attempt > 1)); then
+              sleep 30
+            fi
+
+            echo "Looking for source tag sha-${GITHUB_SHA}-* (attempt ${attempt} of 30)"
+
+            # a failed resolve is a missing tag or a transient error, both mean retry
+            for suffix in actual retag; do
+              if oras resolve "${FULL_DEB_NAME}:sha-${GITHUB_SHA}-${suffix}" > /dev/null 2>&1; then
+                OLD_TAG="sha-${GITHUB_SHA}-${suffix}"
+                break
+              fi
+            done
+
+            if [ -n "${OLD_TAG}" ]; then
+              break
+            fi
+          done
+
+          if [ -z "${OLD_TAG}" ]; then
+            echo "::error::No matching source tag found for SHA ${GITHUB_SHA}"
+            exit 1
+          fi
+
+          echo "OLD_TAG=${OLD_TAG}" >> "${GITHUB_ENV}"
+
+      - name: Pull the Debian packages
+        shell: bash
+        run: |
+          mkdir --parents /tmp/deb
+
+          oras pull "${FULL_DEB_NAME}:${OLD_TAG}" --output /tmp/deb
+
+      - name: Assert deb versions match the release
+        shell: bash
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          expected="${TAG#v}-1"
+
+          for deb_file in /tmp/deb/*.deb; do
+            actual=$(dpkg-deb --field "${deb_file}" Version)
+
+            if [ "${actual}" != "${expected}" ]; then
+              # graduation checked the same debs, so a mismatch here means the registry chain diverged
+              echo "::error::Debian package version ${actual} of ${deb_file} does not match release version ${expected}, not re-tagging"
+              exit 1
+            fi
+          done
+
+      - name: Verify build attestations
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # gh attestation verify takes exactly one subject at a time
+          for deb_file in /tmp/deb/*.deb; do
+            gh attestation verify "${deb_file}" --repo "${GITHUB_REPOSITORY}"
+          done
+
+      - name: Re-tag the debs with the release version
+        shell: bash
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          oras tag "${FULL_DEB_NAME}:${OLD_TAG}" "${TAG}" "latest"
+
+      # graduate-release attached the debs while the release was a draft, it is immutable now
+      - name: Attest Debian packages
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: /tmp/deb/*.deb

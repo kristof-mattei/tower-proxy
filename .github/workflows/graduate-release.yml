@@ -17,14 +17,22 @@ permissions:
 
 env:
   CARGO_TERM_COLOR: always
+  # github.repository as <account>/<repo>
+  IMAGE_NAME: ${{ github.repository }}
+  REGISTRY: ghcr.io
 
 jobs:
   graduate:
     name: Graduate Release
     runs-on: ubuntu-26.04
     permissions:
-      contents: write # to create tags
-      pull-requests: write # to close stale release PRs
+      contents: write # to create the tag and the draft release
+      pull-requests: read # compute-changelog-selection reads the PR body, needs this in private repos
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+      prerelease: ${{ steps.release.outputs.prerelease }}
+      finalized: ${{ steps.check_release.outputs.finalized }}
+      base_sha: ${{ steps.ballot.outputs.base-sha }}
     if: |
       github.event.pull_request.merged == true &&
       startsWith(github.event.pull_request.head.ref, 'release/v')
@@ -119,11 +127,20 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.release.outputs.tag }}
         run: |
-          if gh release view "${TAG}" &>/dev/null; then
+          is_draft=$(gh release view "${TAG}" --json isDraft --jq '.isDraft' 2>/dev/null) || is_draft=""
+
+          if [ -z "${is_draft}" ]; then
+            echo "exists=false" >> "${GITHUB_OUTPUT}"
+            echo "finalized=false" >> "${GITHUB_OUTPUT}"
+          elif [ "${is_draft}" == "true" ]; then
+            # a previous run died after creating the draft, the jobs below resume from it
+            echo "Draft release ${TAG} already exists, resuming"
+            echo "exists=true" >> "${GITHUB_OUTPUT}"
+            echo "finalized=false" >> "${GITHUB_OUTPUT}"
+          else
             echo "Release ${TAG} already exists, bailing"
             echo "exists=true" >> "${GITHUB_OUTPUT}"
-          else
-            echo "exists=false" >> "${GITHUB_OUTPUT}"
+            echo "finalized=true" >> "${GITHUB_OUTPUT}"
           fi
 
       - name: Install git-cliff to generate changelog
@@ -141,17 +158,17 @@ jobs:
         run: |
           git-cliff --output release-notes.md --current
 
-      - name: Create GitHub release
+      - name: Create draft GitHub release
         if: steps.check_release.outputs.exists == 'false'
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.TOKEN_TO_TRIGGER_SUBSEQUENT_WORKFLOWS }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.release.outputs.tag }}
           PRERELEASE: ${{ steps.release.outputs.prerelease }}
         run: |
           # Truncate release-notes.md if it exceeds GitHub Release character body limit
           max_length=125000
-          truncation_message=$'\n\n---\n\n> **Note:** Release notes were truncated because they exceeded GitHub'"'"'s 125,000 character limit.'
+          truncation_message=$'\n\n---\n\n> The release notes exceed GitHub'"'"'s 125,000 character limit and were cut here.'
           file_length=$(wc --chars < release-notes.md)
 
           if [ "$file_length" -gt "$max_length" ]; then
@@ -161,24 +178,154 @@ jobs:
             mv release-notes-truncated.md release-notes.md
           fi
 
-          release_args=()
+          prerelease_args=()
           if [ "${PRERELEASE}" == "true" ]; then
-            # prereleases cannot be set as latest
-            release_args+=(--prerelease)
-          else
-            release_args+=(--latest)
+            prerelease_args+=(--prerelease)
           fi
 
+          # releases are immutable once published, assets have to be attached while it's still a draft
           gh release create "${TAG}" \
+            --draft \
             --notes-file release-notes.md \
             --title "${TAG}" \
             --verify-tag \
-            "${release_args[@]}"
+            "${prerelease_args[@]}"
 
-      - name: Close stale release PRs
-        if: steps.check_release.outputs.exists == 'false'
+  attach-deb:
+    name: Attach Debian packages to the draft release
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    permissions:
+      attestations: read # gh attestation verify, needs this in private repos
+      contents: write # to upload the release assets
+      packages: read # to pull the debs from ghcr.io
+    needs:
+      - graduate
+    # the predicted version has no pre-release suffix, so pre-releases ship without debs
+    if: |
+      vars.HAS_DEB == 'true' &&
+      needs.graduate.outputs.finalized == 'false' &&
+      needs.graduate.outputs.prerelease == 'false'
+    steps:
+      - name: Set up ORAS
+        uses: oras-project/setup-oras@1d808f7d7f6995cc68b7bf507bfe5c5446e1dc9d # v2.0.1
+
+      - name: Set full deb artifact name
+        shell: bash
+        run: |
+          echo "FULL_DEB_NAME=${REGISTRY,,}/${IMAGE_NAME,,}-deb" >> "${GITHUB_ENV}"
+
+      - name: Log into registry ${{ env.REGISTRY }}
         shell: bash
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          oras login "${REGISTRY,,}" --username "${GITHUB_ACTOR}" --password-stdin <<< "${GITHUB_TOKEN}"
+
+      - name: Find the Debian packages of this release
+        shell: bash
+        env:
+          BASE_SHA: ${{ needs.graduate.outputs.base_sha }}
+        run: |
+          # CI skips release/ branches, so a release PR builds no debs and the release ships the debs of its base commit (the merge's first parent)
+          # CI's base check made sure the base commit's sha-<base>-* tag existed before the release PR could merge, so if it's missing now, waiting won't help
+          for suffix in actual retag; do
+            old_tag="sha-${BASE_SHA}-${suffix}"
+
+            if oras resolve "${FULL_DEB_NAME}:${old_tag}" > /dev/null 2>&1; then
+              echo "Found ${old_tag}"
+              echo "OLD_TAG=${old_tag}" >> "${GITHUB_ENV}"
+              exit 0
+            fi
+          done
+
+          echo "::error::No Debian package tagged sha-${BASE_SHA}-actual or sha-${BASE_SHA}-retag. The release stays a draft, re-run this workflow once the retag run of that commit has finished."
+          exit 1
+
+      - name: Pull the Debian packages
+        shell: bash
+        run: |
+          mkdir --parents /tmp/deb
+
+          oras pull "${FULL_DEB_NAME}:${OLD_TAG}" --output /tmp/deb
+
+      - name: Assert deb versions match the release
+        shell: bash
+        env:
+          TAG: ${{ needs.graduate.outputs.tag }}
+        run: |
+          expected="${TAG#v}-1"
+
+          for deb_file in /tmp/deb/*.deb; do
+            actual=$(dpkg-deb --field "${deb_file}" Version)
+
+            if [ "${actual}" != "${expected}" ]; then
+              # CI rebuilds the deb whenever the predicted version moves, so a mismatch means main moved without a PR build
+              echo "::error::Debian package version ${actual} of ${deb_file} does not match release version ${expected}. The release stays a draft. Attach packages built from the tag by hand, or publish it without them."
+              exit 1
+            fi
+          done
+
+      - name: Verify build attestations
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # gh attestation verify takes exactly one subject at a time
+          for deb_file in /tmp/deb/*.deb; do
+            gh attestation verify "${deb_file}" --repo "${GITHUB_REPOSITORY}"
+          done
+
+      - name: Upload the debs to the draft release
+        shell: bash
+        env:
+          GH_REPO: ${{ github.repository }} # no checkout, so gh cannot infer the repository from a git remote
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.graduate.outputs.tag }}
+        run: |
+          # --clobber so a resumed run after a partial upload succeeds
+          gh release upload "${TAG}" /tmp/deb/*.deb --clobber
+
+  publish:
+    name: Publish release
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: write # to publish the release
+      pull-requests: write # to close stale release PRs
+    needs:
+      - graduate
+      - attach-deb
+    # a skipped attach-deb still publishes, a failed one leaves the draft
+    if: |
+      !cancelled() &&
+      needs.graduate.result == 'success' &&
+      needs.graduate.outputs.finalized == 'false' &&
+      (
+        needs.attach-deb.result == 'success' ||
+        needs.attach-deb.result == 'skipped'
+      )
+    steps:
+      - name: Publish release
+        shell: bash
+        env:
+          # publishing has to fire the release event, and anything done with GITHUB_TOKEN doesn't trigger workflows
+          GH_REPO: ${{ github.repository }} # no checkout, so gh cannot infer the repository from a git remote
+          GH_TOKEN: ${{ secrets.TOKEN_TO_TRIGGER_SUBSEQUENT_WORKFLOWS }}
+          TAG: ${{ needs.graduate.outputs.tag }}
+          PRERELEASE: ${{ needs.graduate.outputs.prerelease }}
+        run: |
+          latest_args=()
+          if [ "${PRERELEASE}" == "false" ]; then
+            # drafts and prereleases cannot be set as latest
+            latest_args+=(--latest)
+          fi
+
+          gh release edit "${TAG}" --draft=false "${latest_args[@]}"
+
+      - name: Close stale release PRs
+        shell: bash
+        env:
+          GH_REPO: ${{ github.repository }} # no checkout, so gh cannot infer the repository from a git remote
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Close all other open PRs from release/* branches

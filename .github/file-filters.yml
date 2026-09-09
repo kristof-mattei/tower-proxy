@@ -5,10 +5,14 @@ docker:
   - *shared
   - ".dockerignore"
   - Dockerfile
-rust:
+rust: &rust
   - *shared
   - ".cargo/**"
   - "**/*.toml"
   - "src/**"
   - "tests/**"
   - Cargo.lock
+deb:
+  - *rust
+  - LICENSE
+  - README.md

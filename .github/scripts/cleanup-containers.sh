@@ -69,9 +69,8 @@ while [[ $# -gt 0 ]]; do
             echo "  --untagged-grace-days   Age in days before untagged versions are deleted (default: $untagged_grace_days)"
             echo "  --help                  Show this help message"
             echo ""
-            echo "Note: --org and --user are mutually exclusive. One must be specified."
-            echo "Note: Images with the 'edge' or 'latest' tag, or a release tag (vX.Y.Z), will never be deleted."
-            echo "Note: Platform-specific images referenced by protected multi-platform manifests will not be deleted."
+            echo "One of --org or --user is required."
+            echo "Images tagged edge, latest, or a release tag (vX.Y.Z) are never deleted, and neither are the platform-specific images their manifests reference."
             exit 0
             ;;
         *)
@@ -183,7 +182,7 @@ delete_version() {
         --header "Accept: application/vnd.github+json" \
         --header "X-GitHub-Api-Version: 2022-11-28" \
         "$api_path/packages/container/$package_name/versions/$version_id" 2> /dev/null; then
-        echo "Successfully deleted version ID: $version_id"
+        echo "Deleted version ID: $version_id"
         return 0
     else
         echo "Failed to delete version ID: $version_id" >&2
@@ -446,8 +445,8 @@ for version_id in "${all_version_ids[@]}"; do
         fi
     fi
 
-    # Not a delete candidate, protect everything its manifest references
-    # Unconditionally: gating on delete_candidates would make protection depend on API return order
+    # Not a delete candidate itself, so protect everything its manifest references, even digests already marked for deletion.
+    # Gating on delete_candidates would make protection depend on the API's return order.
     protect_referenced_digests "$tags"
 done
 
@@ -605,7 +604,7 @@ echo "=========================================="
 echo "           CLEANUP COMPLETE"
 echo "=========================================="
 if [[ "$dry_run" == "false" ]]; then
-    echo "Successfully deleted: $deleted_count"
+    echo "Deleted:              $deleted_count"
     if [[ $failed_count -gt 0 ]]; then
         echo "Failed to delete:     $failed_count"
     fi

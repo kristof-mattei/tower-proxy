@@ -60,7 +60,7 @@ jobs:
           # release/v0.4.8 -> v0.4.8
           tag="${BRANCH#release/}"
 
-          # git-cliff applies .cliffignore to --context as well, which would leave the hidden commits off the ballot. Later steps read the file from git.
+          # git-cliff also applies .cliffignore to --context and would drop the hidden commits from the ballot. Later steps read the file from git.
           rm --force .cliffignore
           git-cliff --context --unreleased --offline --tag "${tag}" > "${RUNNER_TEMP}/ballot-context.json"
 

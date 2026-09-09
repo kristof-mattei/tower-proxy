@@ -7,8 +7,7 @@ on:
       - main
 
 concurrency:
-  # each new commit to a PR runs this workflow
-  # so we need to avoid a long running older one from overwriting the 'pr-<number>-latest'
+  # each new commit to a PR runs this workflow, the older run's result is obsolete, so cancel it
   group: "${{ github.workflow }} @ ${{ github.ref_name }}"
   cancel-in-progress: true
 
@@ -34,9 +33,8 @@ jobs:
       - name: Enforce strict conventional subjects
         shell: bash
         run: |
-          # Enforce '<type>(<scope>)!: <description>' subjects with lowercase type and scope.
-          # Also covers non-merge commits with merge-style messages, which cliff.toml's
-          # ^Merge skip would otherwise exempt from the git-cliff check below.
+          # Enforce '<type>(<scope>)!: <description>' with lowercase type and scope.
+          # This also catches non-merge commits with a 'Merge ...' subject, which the ^Merge skip in cliff.toml hides from the git-cliff check below.
           pattern='^[0-9a-f]+ [a-z]+(\([a-z0-9-]+\))?!?: .+$'
           if git log --no-merges --format="%h %s" "origin/${GITHUB_BASE_REF}..HEAD" | grep --extended-regexp --invert-match "${pattern}"; then
             echo "The commit(s) above do not match '<type>(<scope>)!: <description>' with a lowercase type and scope"

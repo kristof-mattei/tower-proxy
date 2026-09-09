@@ -56,7 +56,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --yes              Skip confirmation prompt"
             echo "  --help             Show this help message"
             echo ""
-            echo "Note: --org and --user are mutually exclusive. One must be specified."
+            echo "One of --org or --user is required."
             exit 0
             ;;
         *)
@@ -135,7 +135,7 @@ delete_version() {
         --header "Accept: application/vnd.github+json" \
         --header "X-GitHub-Api-Version: 2022-11-28" \
         "$api_path/packages/container/$package_name/versions/$version_id" 2> /dev/null; then
-        echo "Successfully deleted version ID: $version_id"
+        echo "Deleted version ID: $version_id"
         return 0
     else
         echo "Failed to delete version ID: $version_id" >&2
@@ -312,7 +312,7 @@ echo "=========================================="
 echo "           CLEANUP COMPLETE"
 echo "=========================================="
 if [[ "$dry_run" == "false" ]]; then
-    echo "Successfully deleted: $deleted_count"
+    echo "Deleted:              $deleted_count"
     if [[ $failed_count -gt 0 ]]; then
         echo "Failed to delete:     $failed_count"
     fi

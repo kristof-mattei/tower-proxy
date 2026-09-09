@@ -45,7 +45,7 @@ jobs:
           persist-credentials: false
           show-progress: false
 
-      # The package is private, manifest inspection (skopeo/docker) needs registry credentials
+      # manifest inspection (skopeo/docker) needs credentials for a private package
       - name: Log into registry ghcr.io
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
@@ -86,4 +86,53 @@ jobs:
           ./.github/scripts/cleanup-container-build-cache.sh \
             --user "${GITHUB_REPOSITORY_OWNER}" \
             --package "${GITHUB_REPOSITORY##*/}-cache" \
+            --yes
+
+  repo-has-deb:
+    name: Repo has deb?
+    runs-on: ubuntu-26.04
+    outputs:
+      has_deb: ${{ steps.determine.outputs.has_deb }}
+    steps:
+      - name: Repo publishes a Debian package?
+        shell: bash
+        id: determine
+        env:
+          HAS_DEB: ${{ vars.HAS_DEB }}
+        run: |
+          echo "has_deb=${HAS_DEB:-false}" >> "${GITHUB_OUTPUT}"
+
+  cleanup-debs:
+    name: Cleanup Debian packages
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      packages: write # delete deb versions
+    needs:
+      - repo-has-deb
+    if: |
+      fromJSON(needs.repo-has-deb.outputs.has_deb) == true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          show-progress: false
+
+      # manifest inspection (skopeo/docker) needs credentials for a private package
+      - name: Log into registry ghcr.io
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # the debs share the tag scheme of the containers, so the same script applies
+      - name: Run Debian package cleanup
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ./.github/scripts/cleanup-containers.sh \
+            --user "${GITHUB_REPOSITORY_OWNER}" \
+            --package "${GITHUB_REPOSITORY##*/}-deb" \
             --yes

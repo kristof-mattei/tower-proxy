@@ -12,9 +12,7 @@ on:
     - cron: "32 23 * * 5"
 
 concurrency:
-  # push, pull_request and schedule all run this workflow; on push and schedule
-  # `ref_name` is `main`, so without `event_name` in the group a push to main
-  # cancels an in-flight weekly scan, which is then lost until the next cron
+  # on push and schedule `ref_name` is `main`, so without `event_name` in the group a push to main would cancel the weekly scan and nothing would run until the next cron
   group: "${{ github.workflow }} @ ${{ github.event_name }} @ ${{ github.ref_name }}"
   cancel-in-progress: true
 

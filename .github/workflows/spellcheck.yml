@@ -7,8 +7,7 @@ on:
       - main
 
 concurrency:
-  # each new commit to a PR runs this workflow
-  # so we need to avoid a long running older one from overwriting the "pr-<number>-latest"
+  # each new commit to a PR runs this workflow, the older run's result is obsolete, so cancel it
   group: "${{ github.workflow }} @ ${{ github.ref_name }}"
   cancel-in-progress: true
 

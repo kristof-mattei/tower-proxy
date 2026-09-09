@@ -118,18 +118,15 @@ jobs:
 
       - *set_up_toolchain
 
-      - name: Install rustfmt
+      - name: Install nightly rustfmt
         shell: bash
         run: |
-          rustup component add rustfmt
-
-          # restore symlinks
-          rustup update
+          rustup toolchain install nightly --profile minimal --component rustfmt
 
       - name: Check formatting
         shell: bash
         run: |
-          cargo fmt --all -- --check
+          cargo +nightly fmt --all -- --check
 
   cargo-test-and-report:
     name: Cargo test (and report)
@@ -158,7 +155,7 @@ jobs:
           rustup update
 
       - name: Install nextest, custom test runner, with native support for junit and grcov
-        uses: taiki-e/install-action@d438492cf8a250514fa2d34b30bc3c0dc37c65ff # v2.87.8
+        uses: taiki-e/install-action@c3ec0de9ae7f1019cea21aa96aa0a895b9552063 # v2.87.9
         with:
           tool: cargo-nextest, grcov
 
@@ -228,7 +225,7 @@ jobs:
         with:
           disable_search: true
           disable_telem: true
-          env_vars: OS,RUST
+          env_vars: RUNNER_OS,RUST
           fail_ci_if_error: true
           # flags: tests
           files: reports/lcov
@@ -245,7 +242,7 @@ jobs:
         with:
           disable_search: true
           disable_telem: true
-          env_vars: OS,RUST
+          env_vars: RUNNER_OS,RUST
           fail_ci_if_error: true
           # flags: tests
           files: reports/results.xml

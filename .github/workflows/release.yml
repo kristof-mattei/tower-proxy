@@ -52,7 +52,7 @@ jobs:
           token: ${{ secrets.TOKEN_TO_TRIGGER_SUBSEQUENT_WORKFLOWS }}
 
       - name: Install git-cliff to generate changelog & next version number
-        uses: taiki-e/install-action@d438492cf8a250514fa2d34b30bc3c0dc37c65ff # v2.87.8
+        uses: taiki-e/install-action@c3ec0de9ae7f1019cea21aa96aa0a895b9552063 # v2.87.9
         with:
           tool: git-cliff
 
@@ -268,6 +268,9 @@ jobs:
             # gh pr edit needs read:org even for --body (cli/cli#13575), so the body is set with a REST PATCH.
             GH_TOKEN="${DEFAULT_TOKEN}" gh api --method PATCH --silent "repos/${GITHUB_REPOSITORY}/pulls/${existing_pr}" \
               --field "body=@${BODY_FILE}"
+
+            # GitHub does not disable auto-merge on a push by a collaborator
+            GH_TOKEN="${DEFAULT_TOKEN}" gh pr merge "${existing_pr}" --disable-auto
           else
             # Opening the PR with GITHUB_TOKEN would not start the required check workflows, so the PAT is used here
             gh pr create \

@@ -55,7 +55,21 @@ jobs:
           persist-credentials: true
           show-progress: false
 
+      - name: Check if tag exists
+        id: check_tag
+        shell: bash
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          if git ls-remote --tags origin "refs/tags/${TAG}" | grep --quiet "refs/tags/${TAG}$"; then
+            echo "Tag ${TAG} already exists remotely, skipping creation"
+            echo "exists=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "exists=false" >> "${GITHUB_OUTPUT}"
+          fi
+
       - name: Compute selection from the final ballot
+        if: steps.check_tag.outputs.exists == 'false'
         id: ballot
         uses: $/.github/actions/compute-changelog-selection
         with:
@@ -64,6 +78,7 @@ jobs:
           head: ${{ github.event.pull_request.merge_commit_sha }}
 
       - name: Compare the merged .cliffignore with the final ballot
+        if: steps.check_tag.outputs.exists == 'false'
         shell: bash
         env:
           MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
@@ -78,22 +93,23 @@ jobs:
           fi
 
       - name: Create tag
+        if: steps.check_tag.outputs.exists == 'false'
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.release.outputs.tag }}
           MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
         run: |
-          if git ls-remote --tags origin "refs/tags/${TAG}" | grep --quiet "refs/tags/${TAG}$"; then
-            echo "Tag ${TAG} already exists remotely, skipping creation"
-          else
-            # lightweight tag: no tag object, just a ref to the already-signed merge commit
-            gh api --method POST "repos/${GITHUB_REPOSITORY}/git/refs" \
-              --raw-field ref="refs/tags/${TAG}" \
-              --raw-field sha="${MERGE_SHA}"
-          fi
+          # lightweight tag: no tag object, just a ref to the already-signed merge commit
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/git/refs" \
+            --raw-field ref="refs/tags/${TAG}" \
+            --raw-field sha="${MERGE_SHA}"
 
-          # fetch the one we just created
+      - name: Fetch tag
+        shell: bash
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
           git fetch origin "refs/tags/${TAG}:refs/tags/${TAG}"
 
       - name: Check if release exists
@@ -112,7 +128,7 @@ jobs:
 
       - name: Install git-cliff to generate changelog
         if: steps.check_release.outputs.exists == 'false'
-        uses: taiki-e/install-action@d438492cf8a250514fa2d34b30bc3c0dc37c65ff # v2.87.8
+        uses: taiki-e/install-action@c3ec0de9ae7f1019cea21aa96aa0a895b9552063 # v2.87.9
         with:
           tool: git-cliff
 

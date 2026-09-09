@@ -5,6 +5,7 @@ on:
   pull_request:
     types:
       - edited
+      - reopened
     branches:
       - main
 
@@ -27,7 +28,7 @@ jobs:
       github.event.pull_request.state == 'open' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       startsWith(github.event.pull_request.head.ref, 'release/v') &&
-      github.event.changes.body != null
+      (github.event.action == 'reopened' || github.event.changes.body != null)
     steps:
       # zizmor: ignore[artipacked] the release branch is pushed with this credential, see the rebuild step
       - name: Checkout
@@ -41,7 +42,7 @@ jobs:
           token: ${{ secrets.TOKEN_TO_TRIGGER_SUBSEQUENT_WORKFLOWS }}
 
       - name: Install git-cliff
-        uses: taiki-e/install-action@d438492cf8a250514fa2d34b30bc3c0dc37c65ff # v2.87.8
+        uses: taiki-e/install-action@c3ec0de9ae7f1019cea21aa96aa0a895b9552063 # v2.87.9
         with:
           tool: git-cliff
 

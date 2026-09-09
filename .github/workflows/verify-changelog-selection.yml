@@ -26,7 +26,9 @@ jobs:
       contents: read
       pull-requests: read # to read the live PR body
     # The check is required on every PR, and a skipped job satisfies it on the PRs without a ballot
-    if: startsWith(github.event.pull_request.head.ref, 'release/v')
+    if: |
+      github.event.pull_request.state == 'open' &&
+      startsWith(github.event.pull_request.head.ref, 'release/v')
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -46,7 +48,7 @@ jobs:
           fi
 
       - name: Install git-cliff
-        uses: taiki-e/install-action@d438492cf8a250514fa2d34b30bc3c0dc37c65ff # v2.87.8
+        uses: taiki-e/install-action@c3ec0de9ae7f1019cea21aa96aa0a895b9552063 # v2.87.9
         with:
           tool: git-cliff
 

@@ -29,6 +29,7 @@ nakata
 nativetls
 nextest
 oneshot
+oras
 pathbuf
 postprocessors
 prereleased

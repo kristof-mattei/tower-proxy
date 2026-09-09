@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+name: Wait for retag run
+description: Wait for the retag run of a commit on main to complete
+
+inputs:
+  sha:
+    description: Commit on main whose retag run to wait for
+    required: true
+  token:
+    description: Token to list workflow runs with, needs actions:read
+    required: true
+
+outputs:
+  url:
+    description: URL of the retag run, empty when none was found
+    value: ${{ steps.wait.outputs.url }}
+  conclusion:
+    description: Conclusion of the retag run, empty when it did not complete in time
+    value: ${{ steps.wait.outputs.conclusion }}
+
+runs:
+  using: composite
+  steps:
+    - name: Wait for the retag run to complete
+      id: wait
+      shell: bash
+      env:
+        GH_REPO: ${{ github.repository }} # the caller may have no checkout, so gh cannot infer the repository from a git remote
+        GH_TOKEN: ${{ inputs.token }}
+        SHA: ${{ inputs.sha }}
+      run: |
+        url=""
+        conclusion=""
+
+        for attempt in $(seq 1 30); do
+          if ((attempt > 1)); then
+            sleep 30
+          fi
+
+          echo "Looking for the retag run of ${SHA} (attempt ${attempt} of 30)"
+
+          # no run yet and a transient api error both mean retry, so don't fail here
+          run=$(gh run list \
+            --workflow retag-containers-after-push.yml \
+            --event push \
+            --commit "${SHA}" \
+            --limit 1 \
+            --json status,conclusion,url \
+            --jq '.[0] // empty') || true
+
+          if [ -z "${run}" ]; then
+            echo "No retag run found yet"
+            continue
+          fi
+
+          status=$(jq --raw-output '.status' <<< "${run}")
+          url=$(jq --raw-output '.url' <<< "${run}")
+
+          if [ "${status}" = "completed" ]; then
+            conclusion=$(jq --raw-output '.conclusion' <<< "${run}")
+            break
+          fi
+
+          echo "Retag run ${url} is ${status}"
+        done
+
+        echo "url=${url}" >> "${GITHUB_OUTPUT}"
+        echo "conclusion=${conclusion}" >> "${GITHUB_OUTPUT}"

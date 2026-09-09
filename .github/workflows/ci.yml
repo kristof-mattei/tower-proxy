@@ -85,67 +85,39 @@ jobs:
       startsWith(github.head_ref, 'release/v') &&
       fromJSON(needs.repo-has-container.outputs.has_container) == true
     steps:
-      - name: Wait for the base commit's retag run to succeed
+      - name: Wait for the base commit's retag run
+        id: retag_run
+        uses: $/.github/actions/wait-for-retag-run
+        with:
+          sha: ${{ github.event.pull_request.base.sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Require the retag run to have succeeded
         shell: bash
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          GH_REPO: ${{ github.repository }} # no checkout, so gh cannot infer the repository from a git remote
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CONCLUSION: ${{ steps.retag_run.outputs.conclusion }}
+          URL: ${{ steps.retag_run.outputs.url }}
         run: |
           # Release PRs build no container, so the retag run for their merge commit falls back to
           # the `sha-<base>-*` tag, which the retag run for the base commit creates.
           # Merging before that run has finished makes the merge commit's retag fail.
-          url=""
-          conclusion=""
-
-          for attempt in $(seq 1 30); do
-            if ((attempt > 1)); then
-              sleep 30
-            fi
-
-            echo "Looking for the retag run of ${BASE_SHA} (attempt ${attempt} of 30)"
-
-            # || true: no run yet, or a transient api error, both mean retry
-            run=$(gh run list \
-              --workflow retag-containers-after-push.yml \
-              --event push \
-              --commit "${BASE_SHA}" \
-              --limit 1 \
-              --json status,conclusion,url \
-              --jq '.[0] // empty') || true
-
-            if [ -z "${run}" ]; then
-              echo "No retag run found yet"
-              continue
-            fi
-
-            status=$(jq --raw-output '.status' <<< "${run}")
-            url=$(jq --raw-output '.url' <<< "${run}")
-
-            if [ "${status}" = "completed" ]; then
-              conclusion=$(jq --raw-output '.conclusion' <<< "${run}")
-              break
-            fi
-
-            echo "Retag run ${url} is ${status}"
-          done
-
-          if [ -z "${url}" ]; then
+          if [ -z "${URL}" ]; then
             echo "::error::No retag run found for base commit ${BASE_SHA}"
             exit 1
           fi
 
-          if [ -z "${conclusion}" ]; then
-            echo "::error::Retag run ${url} for base commit ${BASE_SHA} did not complete in time"
+          if [ -z "${CONCLUSION}" ]; then
+            echo "::error::Retag run ${URL} for base commit ${BASE_SHA} did not complete in time"
             exit 1
           fi
 
-          if [ "${conclusion}" != "success" ]; then
-            echo "::error::Retag run ${url} for base commit ${BASE_SHA} ended with ${conclusion}. Re-run it, then re-run this check."
+          if [ "${CONCLUSION}" != "success" ]; then
+            echo "::error::Retag run ${URL} for base commit ${BASE_SHA} ended with ${CONCLUSION}. Re-run it, then re-run this check."
             exit 1
           fi
 
-          echo "Retag run ${url} succeeded"
+          echo "Retag run ${URL} succeeded"
 
   changes:
     name: Detect changes
@@ -176,19 +148,20 @@ jobs:
     name: Calculate version
     runs-on: ubuntu-slim
     permissions:
+      actions: read # list the retag runs for the base commit
       contents: read
+      packages: read # read the base commit's container from ghcr.io
     needs:
       - changes
       - repo-has-container
     outputs:
       version: ${{ steps.version.outputs.version }}
+      # the container embeds the predicted version, so a new version needs a rebuild just like a code change
+      build_container: ${{ fromJSON(needs.changes.outputs.docker) || fromJSON(needs.changes.outputs.rust) || fromJSON(steps.version_moved.outputs.version_moved) }}
+    # a PR without a Rust or Docker change can still move the predicted version
     if: |
       github.event_name == 'pull_request' &&
-      fromJSON(needs.repo-has-container.outputs.has_container) == true &&
-      (
-        fromJSON(needs.changes.outputs.docker) == true ||
-        fromJSON(needs.changes.outputs.rust) == true
-      )
+      fromJSON(needs.repo-has-container.outputs.has_container) == true
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -198,7 +171,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install git-cliff to generate changelog & next version number
-        uses: taiki-e/install-action@d438492cf8a250514fa2d34b30bc3c0dc37c65ff # v2.87.8
+        uses: taiki-e/install-action@c3ec0de9ae7f1019cea21aa96aa0a895b9552063 # v2.87.9
         with:
           tool: git-cliff
 
@@ -223,6 +196,59 @@ jobs:
           # tags are vX.Y.Z, cargo versions are not prefixed
           echo "version=${bumped#v}" >> "${GITHUB_OUTPUT}"
 
+      - name: Set up ORAS
+        uses: oras-project/setup-oras@1d808f7d7f6995cc68b7bf507bfe5c5446e1dc9d # v2.0.1
+
+      - name: Log into registry ${{ env.REGISTRY }}
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # an unreachable registry costs a rebuild below, not a failed run
+          oras login "${REGISTRY,,}" --username "${GITHUB_ACTOR}" --password-stdin <<< "${GITHUB_TOKEN}" || true
+
+      # the base commit's tag comes from its retag run, which may still be going
+      - name: Wait for the base commit's retag run
+        uses: $/.github/actions/wait-for-retag-run
+        with:
+          sha: ${{ github.event.pull_request.base.sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compare against the version in the base commit's container
+        shell: bash
+        id: version_moved
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          image_name="${REGISTRY,,}/${IMAGE_NAME,,}"
+
+          references=("${image_name}")
+
+          version_moved=false
+
+          for reference in "${references[@]}"; do
+            # the base commit's artifact was built with whatever version was predicted back then
+            base_version=""
+
+            for suffix in actual retag; do
+              if manifest=$(oras manifest fetch "${reference}:sha-${BASE_SHA}-${suffix}" 2>/dev/null); then
+                base_version=$(jq --raw-output '.annotations["org.opencontainers.image.version"] // empty' <<< "${manifest}")
+                break
+              fi
+            done
+
+            if [ "${base_version}" = "v${VERSION}" ]; then
+              echo "${reference} at ${BASE_SHA} already has v${VERSION}"
+            else
+              # no artifact at all lands here too, either nothing was built yet or the base's retag run failed
+              echo "${reference} at ${BASE_SHA} has '${base_version}', this PR predicts v${VERSION}"
+              version_moved=true
+            fi
+          done
+
+          echo "version_moved=${version_moved}" >> "${GITHUB_OUTPUT}"
+
   docker-prepare-variables:
     name: Prepare Docker variables and version bump patch
     runs-on: ubuntu-26.04
@@ -235,9 +261,8 @@ jobs:
       registry: ${{ steps.variables.outputs.registry }}
       unique_tag: ${{ steps.variables.outputs.unique_tag }}
     needs:
-      - repo-has-container
       - calculate-version
-    if: fromJSON(needs.repo-has-container.outputs.has_container) == true
+    if: fromJSON(needs.calculate-version.outputs.build_container) == true
     steps:
       - &checkout
         name: Checkout
@@ -247,7 +272,7 @@ jobs:
           show-progress: false
 
       - name: Install cargo-edit to do set-version
-        uses: taiki-e/install-action@d438492cf8a250514fa2d34b30bc3c0dc37c65ff # v2.87.8
+        uses: taiki-e/install-action@c3ec0de9ae7f1019cea21aa96aa0a895b9552063 # v2.87.9
         with:
           tool: cargo-edit
 
@@ -330,14 +355,7 @@ jobs:
       - calculate-version
       - architectures
       - docker-prepare-variables
-      - changes
-      - repo-has-container
-    if: |
-      fromJSON(needs.repo-has-container.outputs.has_container) == true &&
-      (
-        fromJSON(needs.changes.outputs.docker) == true ||
-        fromJSON(needs.changes.outputs.rust) == true
-      )
+    if: fromJSON(needs.calculate-version.outputs.build_container) == true
     steps:
       - *checkout
 

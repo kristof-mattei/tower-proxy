@@ -54,6 +54,7 @@ runs:
         > [!NOTE]
         > A checked entry appears in `CHANGELOG.md` and in the release notes. The release commit is rebuilt after every change to the ballot.
         > An unchecked commit is still part of the release and counts toward the version.
+        > A push to `main` rebuilds the release commit with the new entries and turns auto-merge off.
         > Merge the PR once the selection is final. The Verify changelog selection check stays red until the rebuild has caught up with the ballot.
 
         INSTRUCTIONS

@@ -18,22 +18,18 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  repo-has-crate:
-    name: Repo publishes crate?
+  publish-crate:
+    name: Publish crate
     runs-on: ubuntu-26.04
-    outputs:
-      has_crate: ${{ steps.determine.outputs.has_crate }}
-      version: ${{ steps.version.outputs.version }}
-
+    environment:
+      name: crates-io
+      url: https://crates.io/crates/${{ github.event.repository.name }}/${{ steps.version.outputs.version }}
+    permissions:
+      contents: read
+      id-token: write # crates-io-auth-action trades this for a publish token
+    if: |
+      vars.HAS_CRATE == 'true'
     steps:
-      - name: Repo has crate?
-        id: determine
-        shell: bash
-        env:
-          HAS_CRATE: ${{ vars.HAS_CRATE }}
-        run: |
-          echo "has_crate=${HAS_CRATE:-false}" >> "${GITHUB_OUTPUT}"
-
       - name: Determine version
         id: version
         shell: bash
@@ -43,20 +39,6 @@ jobs:
           # tags are vX.Y.Z, crates.io versions are not prefixed
           echo "version=${REF_NAME#v}" >> "${GITHUB_OUTPUT}"
 
-  publish-crate:
-    name: Publish crate
-    runs-on: ubuntu-26.04
-    environment:
-      name: release
-      url: https://crates.io/crates/${{ github.event.repository.name }}/${{ needs.repo-has-crate.outputs.version }}
-    permissions:
-      contents: read
-      id-token: write # crates-io-auth-action trades this for a publish token
-    needs:
-      - repo-has-crate
-    if: |
-      fromJSON(needs.repo-has-crate.outputs.has_crate) == true
-    steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -88,7 +70,7 @@ jobs:
       - name: Set version in Cargo.toml / Cargo.lock
         shell: bash
         env:
-          VERSION: ${{ needs.repo-has-crate.outputs.version }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           cargo set-version "${VERSION}"
 

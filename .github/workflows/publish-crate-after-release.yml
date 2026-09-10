@@ -26,7 +26,7 @@ jobs:
       url: https://crates.io/crates/${{ github.event.repository.name }}/${{ steps.version.outputs.version }}
     permissions:
       contents: read
-      id-token: write # crates-io-auth-action trades this for a publish token
+      id-token: write # crates-io-auth-action exchanges this for a publish token
     if: |
       vars.HAS_CRATE == 'true'
     steps:

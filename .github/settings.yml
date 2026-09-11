@@ -126,6 +126,11 @@ environments:
       custom_branches:
         - name: v*
           type: tag
+  - name: ghcr-io
+    deployment_branch_policy:
+      custom_branches:
+        - name: v*
+          type: tag
 
 # See https://docs.github.com/en/rest/repos/rules#create-a-repository-ruleset for the properties.
 rulesets:

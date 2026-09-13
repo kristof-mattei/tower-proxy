@@ -62,6 +62,7 @@ jobs:
   repo-has-container:
     name: Repo has container?
     runs-on: ubuntu-slim
+    if: github.event_name == 'pull_request'
     outputs:
       has_container: ${{ steps.determine.outputs.has_container }}
     steps:
@@ -76,6 +77,7 @@ jobs:
   repo-has-deb:
     name: Repo has deb?
     runs-on: ubuntu-slim
+    if: github.event_name == 'pull_request'
     outputs:
       has_deb: ${{ steps.determine.outputs.has_deb }}
     steps:
@@ -139,7 +141,7 @@ jobs:
   changes:
     name: Detect changes
     runs-on: ubuntu-slim
-    if: ${{ !startsWith(github.head_ref, 'release/') }}
+    if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'release/')
     permissions:
       contents: read
       pull-requests: read # dorny/paths-filter reads the PR's changed files
@@ -151,8 +153,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # on push events dorny/paths-filter diffs against github.event.before over git and fetches it with the persisted credentials
-          persist-credentials: true
+          persist-credentials: false
           show-progress: false
 
       - name: Check if we actually made changes

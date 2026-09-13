@@ -194,24 +194,6 @@ jobs:
           subject-digest: ${{ steps.digest.outputs.digest }}
           push-to-registry: true
 
-      - name: Docker Scout (linux/amd64)
-        uses: docker/scout-action@7c6b6c3f7844478ace1ffd4e7aef649053d1f87d # v1.24.0
-        with:
-          command: cves
-          image: "${{ env.FULL_IMAGE_NAME }}@${{ steps.digest.outputs.digest }}"
-          platform: linux/amd64
-          dockerhub-user: ${{ vars.DOCKERHUB_USERNAME }}
-          dockerhub-password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Docker Scout (linux/arm64)
-        uses: docker/scout-action@7c6b6c3f7844478ace1ffd4e7aef649053d1f87d # v1.24.0
-        with:
-          command: cves
-          image: "${{ env.FULL_IMAGE_NAME }}@${{ steps.digest.outputs.digest }}"
-          platform: linux/arm64
-          dockerhub-user: ${{ vars.DOCKERHUB_USERNAME }}
-          dockerhub-password: ${{ secrets.DOCKERHUB_TOKEN }}
-
   repo-has-deb:
     name: Repo has deb?
     runs-on: ubuntu-26.04

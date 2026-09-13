@@ -19,8 +19,8 @@ RUN apt-get update \
         xz-utils
 
 # trixie only has cargo-auditable 0.6.6, we need >= 0.6.7 for bare rust-lld (see build.sh)
-ADD --checksum=sha256:3374daaf153e6f82028add5e4bf7cc2deab46537dee24f20be80df831193aeb4 https://github.com/rust-secure-code/cargo-auditable/releases/download/v0.7.5/cargo-auditable-x86_64-unknown-linux-musl.tar.xz /tmp/cargo-auditable-x86_64.tar.xz
-ADD --checksum=sha256:35d90cee9648037eaa4c1a2649fdca9d1b9a9997b972d37be7f8629139ba1294 https://github.com/rust-secure-code/cargo-auditable/releases/download/v0.7.5/cargo-auditable-aarch64-unknown-linux-musl.tar.xz /tmp/cargo-auditable-aarch64.tar.xz
+ADD --checksum=sha256:42b66c852fbb9074a9ca356279a92eb753f48dde16017b8c82f48dcd05d6c856 https://github.com/rust-secure-code/cargo-auditable/releases/download/v0.7.6/cargo-auditable-x86_64-unknown-linux-musl.tar.xz /tmp/cargo-auditable-x86_64.tar.xz
+ADD --checksum=sha256:57265fbd87e9277fbd850c74177d17e5a6f51f15e2803643db65c187b0d4feda https://github.com/rust-secure-code/cargo-auditable/releases/download/v0.7.6/cargo-auditable-aarch64-unknown-linux-musl.tar.xz /tmp/cargo-auditable-aarch64.tar.xz
 
 RUN tar --extract --xz --no-same-owner --strip-components 1 \
         --directory /usr/local/cargo/bin \
@@ -114,7 +114,7 @@ COPY <<EOF /etc/group
 appgroup:x:900:appuser
 EOF
 
-COPY --from=rust-build /output/bin/${APPLICATION_NAME} /app/entrypoint
+COPY --from=rust-build /output/bin/${APPLICATION_NAME} /app/tower-proxy
 
 USER appuser
 
@@ -122,4 +122,4 @@ ENV RUST_BACKTRACE=full
 
 WORKDIR /app
 
-ENTRYPOINT ["/app/entrypoint"]
+ENTRYPOINT ["/app/tower-proxy"]

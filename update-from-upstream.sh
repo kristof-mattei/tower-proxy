@@ -19,5 +19,14 @@ git push --set-upstream origin update-from-upstream
 # merge in the changes from upstream
 git merge upstream/main --no-edit
 
+# the merged Dockerfile's entrypoint path ends in the seed's name, rewrite it to this repo's
+application_name=$(basename --suffix=.git "$(git remote get-url origin)")
+
+# split so update-name.sh does not rewrite this line
+part_name="rust-"
+seed_name="${part_name}seed"
+
+sed --in-place "s#/app/${seed_name}#/app/${application_name,,}#g" Dockerfile
+
 # fix stuff and ...
 # git push

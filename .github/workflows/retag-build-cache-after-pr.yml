@@ -74,6 +74,12 @@ jobs:
           - "ubuntu-26.04"
           - "ubuntu-26.04-arm"
         platform: ${{ fromJSON(needs.architectures.outputs.architectures) }}
+        # `docker-build` in `ci.yml` skips these pairs, so no PR cache exists to retag
+        exclude:
+          - runs-on: "ubuntu-26.04-arm"
+            platform: amd64/v2
+          - runs-on: "ubuntu-26.04-arm"
+            platform: amd64/v3
     runs-on: ${{ matrix.runs-on }}
     permissions:
       contents: read

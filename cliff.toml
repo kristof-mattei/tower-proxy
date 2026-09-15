@@ -146,13 +146,6 @@ topo_order_commits = true
 sort_commits = "oldest"
 # Process submodules commits
 recurse_submodules = false
-# Exclude commits that only modify files matching these glob patterns.
-exclude_paths = [
-    ".vscode/**",
-    ".devcontainer/**",
-    "cspell.json",
-    "project-words.txt",
-]
 
 [bump]
 # Bump the major version for breaking changes even while the major version is 0.

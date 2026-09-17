@@ -82,7 +82,7 @@ jobs:
       - name: Check the changelog section is not empty
         shell: bash
         run: |
-          # A promotion release re-tags the previous content and has an empty ballot
+          # A release of skipped commits only, such as dependency updates, has an empty ballot
           if [ ! -s "${RUNNER_TEMP}/expected.txt" ]; then
             echo "::notice::The ballot is empty, nothing to check"
             exit 0

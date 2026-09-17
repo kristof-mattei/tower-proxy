@@ -287,6 +287,7 @@ jobs:
     runs-on: ubuntu-26.04
     outputs:
       application_name: ${{ steps.variables.outputs.application_name }}
+      authors: ${{ steps.variables.outputs.authors }}
       description: ${{ steps.variables.outputs.description }}
       full_deb_name_remote_registry: ${{ steps.variables.outputs.full_deb_name_remote_registry }}
       full_image_name_remote_registry: ${{ steps.variables.outputs.full_image_name_remote_registry }}
@@ -353,6 +354,12 @@ jobs:
           printf "%s\n" \
               "description<<EOF" \
               "$description" \
+              "EOF" >> "$GITHUB_OUTPUT"
+
+          authors=$(cargo metadata --format-version 1 --no-deps | jq ".packages.[] | select(.name == \"${application_name}\") | .authors | join(\", \")" --raw-output)
+          printf "%s\n" \
+              "authors<<EOF" \
+              "$authors" \
               "EOF" >> "$GITHUB_OUTPUT"
 
           # This is the unique docker tag
@@ -475,14 +482,22 @@ jobs:
         id: meta
         with:
           annotations: |
+            org.opencontainers.image.authors=${{ needs.prepare-variables.outputs.authors }}
             org.opencontainers.image.description=${{ needs.prepare-variables.outputs.description }} (${{ matrix.platform }})
+            # this image is built from the merge of head (branch) into base (main), see
+            # https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request
+            # `strict_required_status_checks_policy` in `.github/settings.yml` blocks merging once base moves,
+            # so if this PR merges, the merge commit on main will have this same tree
             org.opencontainers.image.revision=${{ github.event.pull_request.base.sha }}-${{ github.event.pull_request.head.sha }}
             org.opencontainers.image.source=${{ github.event.pull_request.html_url }}
+            org.opencontainers.image.vendor=${{ github.repository_owner }}
             org.opencontainers.image.version=v${{ needs.calculate-version.outputs.version }}
           labels: |
+            org.opencontainers.image.authors=${{ needs.prepare-variables.outputs.authors }}
             org.opencontainers.image.description=${{ needs.prepare-variables.outputs.description }} (${{ matrix.platform }})
             org.opencontainers.image.revision=${{ github.event.pull_request.base.sha }}-${{ github.event.pull_request.head.sha }}
             org.opencontainers.image.source=${{ github.event.pull_request.html_url }}
+            org.opencontainers.image.vendor=${{ github.repository_owner }}
             org.opencontainers.image.version=v${{ needs.calculate-version.outputs.version }}
           images: ${{ needs.prepare-variables.outputs.full_image_name_local_registry }}
           tags: |
@@ -575,9 +590,11 @@ jobs:
         id: meta
         with:
           annotations: |
+            org.opencontainers.image.authors=${{ needs.prepare-variables.outputs.authors }}
             org.opencontainers.image.description=${{ needs.prepare-variables.outputs.description }}
             org.opencontainers.image.revision=${{ github.event.pull_request.base.sha }}-${{ github.event.pull_request.head.sha }}
             org.opencontainers.image.source=${{ github.event.pull_request.html_url }}
+            org.opencontainers.image.vendor=${{ github.repository_owner }}
             org.opencontainers.image.version=v${{ needs.calculate-version.outputs.version }}
           images: ${{ needs.prepare-variables.outputs.full_image_name_remote_registry }}
           tags: |
@@ -935,13 +952,21 @@ jobs:
         shell: bash
         working-directory: ${{ steps.artifact.outputs.download-path }}
         env:
+          AUTHORS: ${{ needs.prepare-variables.outputs.authors }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
           FULL_DEB_NAME: ${{ needs.prepare-variables.outputs.full_deb_name_remote_registry }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
           UNIQUE_TAG: ${{ needs.prepare-variables.outputs.unique_tag }}
           VERSION: ${{ needs.calculate-version.outputs.version }}
         run: |
           # the two debs go in one artifact, so the retag chain deals with a single reference
-          # the next PR's calculate-version reads this annotation
+          # the next PR's calculate-version reads the version annotation
           oras push \
+            --annotation "org.opencontainers.image.authors=${AUTHORS}" \
+            --annotation "org.opencontainers.image.revision=${BASE_SHA}-${HEAD_SHA}" \
+            --annotation "org.opencontainers.image.source=${PR_URL}" \
+            --annotation "org.opencontainers.image.vendor=${GITHUB_REPOSITORY_OWNER}" \
             --annotation "org.opencontainers.image.version=v${VERSION}" \
             --artifact-type application/vnd.debian.binary-package \
             "${FULL_DEB_NAME}:${UNIQUE_TAG}" \

@@ -8,7 +8,7 @@ on:
 
 concurrency:
   group: "${{ github.workflow }}"
-  cancel-in-progress: true # the newer run dispatches for every open release PR against the newer main
+  cancel-in-progress: true # the newer run dispatches against the newer main
 
 permissions:
   contents: read
@@ -21,7 +21,7 @@ jobs:
       actions: write # to dispatch the Release workflow
       pull-requests: read # to list open release PRs and the PR merged by this push
     steps:
-      - name: Dispatch Release for every open release PR
+      - name: Dispatch Release when a release PR is open
         shell: bash
         env:
           GH_REPO: ${{ github.repository }} # no checkout, so gh cannot infer the repository from a git remote
@@ -37,23 +37,14 @@ jobs:
             exit 0
           fi
 
-          # Release's concurrency group is keyed on the pre-release type, so a second dispatch of the same type would just queue.
-          # release/v1.2.3 -> none, release/v1.2.3-alpha.1 -> alpha
-          gh pr list \
-            --state open \
-            --limit 100 \
-            --json headRefName \
-          | jq --raw-output --arg re '-(?<type>alpha|beta|rc)\.[0-9]+$' '
-              [ .[]
-                | select(.headRefName | startswith("release/v"))
-                | (.headRefName | if test($re) then capture($re).type else "none" end)
-              ]
-              | unique[]
-            ' \
-          | while read -r prerelease; do
-            echo "::notice::Dispatching Release with prerelease=${prerelease}"
+          open_release_prs=$(gh pr list --state open --limit 100 --json headRefName \
+            --jq '[.[] | select(.headRefName | startswith("release/v"))] | length')
 
-            gh workflow run release.yml \
-              --ref main \
-              --raw-field prerelease="${prerelease}"
-          done
+          if [ "${open_release_prs}" -eq 0 ]; then
+            echo "::notice::No open release PR, nothing to rebuild"
+            exit 0
+          fi
+
+          echo "::notice::Dispatching Release"
+
+          gh workflow run release.yml --ref main

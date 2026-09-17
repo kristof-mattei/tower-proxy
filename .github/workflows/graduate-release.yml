@@ -30,7 +30,6 @@ jobs:
       pull-requests: read # compute-changelog-selection reads the PR body, needs this in private repos
     outputs:
       tag: ${{ steps.release.outputs.tag }}
-      prerelease: ${{ steps.release.outputs.prerelease }}
       finalized: ${{ steps.check_release.outputs.finalized }}
       base_sha: ${{ steps.ballot.outputs.base-sha }}
     if: |
@@ -43,17 +42,8 @@ jobs:
         env:
           BRANCH: ${{ github.event.pull_request.head.ref }}
         run: |
-          # release/v0.0.3-rc.1 -> v0.0.3-rc.1
-          # release/v0.0.3-alpha.1 -> v0.0.3-alpha.1
           # release/v0.0.3 -> v0.0.3
-          tag="${BRANCH#release/}"
-          echo "tag=$tag" >> "${GITHUB_OUTPUT}"
-
-          if [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "prerelease=false" >> "${GITHUB_OUTPUT}"
-          else
-            echo "prerelease=true" >> "${GITHUB_OUTPUT}"
-          fi
+          echo "tag=${BRANCH#release/}" >> "${GITHUB_OUTPUT}"
 
       # zizmor: ignore[artipacked] the tag steps below read from the remote, which needs the credential in .git/config
       - name: Checkout
@@ -164,7 +154,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.release.outputs.tag }}
-          PRERELEASE: ${{ steps.release.outputs.prerelease }}
         run: |
           # Truncate release-notes.md if it exceeds GitHub Release character body limit
           max_length=125000
@@ -178,18 +167,12 @@ jobs:
             mv release-notes-truncated.md release-notes.md
           fi
 
-          prerelease_args=()
-          if [ "${PRERELEASE}" == "true" ]; then
-            prerelease_args+=(--prerelease)
-          fi
-
           # releases are immutable once published, assets have to be attached while it's still a draft
           gh release create "${TAG}" \
             --draft \
             --notes-file release-notes.md \
             --title "${TAG}" \
-            --verify-tag \
-            "${prerelease_args[@]}"
+            --verify-tag
 
   attach-deb:
     name: Attach Debian packages to the draft release
@@ -201,11 +184,9 @@ jobs:
       packages: read # to pull the debs from ghcr.io
     needs:
       - graduate
-    # the predicted version has no pre-release suffix, so pre-releases ship without debs
     if: |
       vars.HAS_DEB == 'true' &&
-      needs.graduate.outputs.finalized == 'false' &&
-      needs.graduate.outputs.prerelease == 'false'
+      needs.graduate.outputs.finalized == 'false'
     steps:
       - name: Set up ORAS
         uses: oras-project/setup-oras@1d808f7d7f6995cc68b7bf507bfe5c5446e1dc9d # v2.0.1
@@ -312,15 +293,8 @@ jobs:
           GH_REPO: ${{ github.repository }} # no checkout, so gh cannot infer the repository from a git remote
           GH_TOKEN: ${{ secrets.TOKEN_TO_TRIGGER_SUBSEQUENT_WORKFLOWS }}
           TAG: ${{ needs.graduate.outputs.tag }}
-          PRERELEASE: ${{ needs.graduate.outputs.prerelease }}
         run: |
-          latest_args=()
-          if [ "${PRERELEASE}" == "false" ]; then
-            # drafts and prereleases cannot be set as latest
-            latest_args+=(--latest)
-          fi
-
-          gh release edit "${TAG}" --draft=false "${latest_args[@]}"
+          gh release edit "${TAG}" --draft=false --latest
 
       - name: Close stale release PRs
         shell: bash

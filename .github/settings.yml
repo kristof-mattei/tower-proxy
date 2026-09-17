@@ -202,8 +202,8 @@ rulesets:
           require_code_owner_review: false
           require_last_push_approval: false
           required_review_thread_resolution: false
-          # The API returns this key with a default of `true` but does not document it as an input. It is in public preview.
-          # require_extra_approval_for_unattributed_changes: true
+          # GitHub defaults this key to `true` on every ruleset, and the REST API does not document it as an input. It is in public preview.
+          require_extra_approval_for_unattributed_changes: false
           # Accepts any of `merge`, `squash`, and `rebase`.
           allowed_merge_methods:
             - merge

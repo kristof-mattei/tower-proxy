@@ -228,7 +228,7 @@ has_latest_tag() {
 
 has_release_tag() {
     local tags_json="$1"
-    echo "$tags_json" | jq --exit-status '.[] | select(test("^v[0-9]+\\.[0-9]+\\.[0-9]+(-(alpha|beta|rc)\\.[0-9]+)?$"))' > /dev/null 2>&1
+    echo "$tags_json" | jq --exit-status '.[] | select(test("^v[0-9]+\\.[0-9]+\\.[0-9]+$"))' > /dev/null 2>&1
 }
 
 has_attestation_tag() {

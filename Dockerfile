@@ -18,7 +18,7 @@ RUN apt-get update \
         patch \
         xz-utils
 
-# trixie only has cargo-auditable 0.6.6, we need >= 0.6.7 for bare rust-lld (see build.sh)
+# trixie only has cargo-auditable 0.6.6, we need >= 0.6.7 for a bare linker (see build.sh)
 ADD --checksum=sha256:42b66c852fbb9074a9ca356279a92eb753f48dde16017b8c82f48dcd05d6c856 https://github.com/rust-secure-code/cargo-auditable/releases/download/v0.7.6/cargo-auditable-x86_64-unknown-linux-musl.tar.xz /tmp/cargo-auditable-x86_64.tar.xz
 ADD --checksum=sha256:57265fbd87e9277fbd850c74177d17e5a6f51f15e2803643db65c187b0d4feda https://github.com/rust-secure-code/cargo-auditable/releases/download/v0.7.6/cargo-auditable-aarch64-unknown-linux-musl.tar.xz /tmp/cargo-auditable-aarch64.tar.xz
 
@@ -27,6 +27,16 @@ RUN tar --extract --xz --no-same-owner --strip-components 1 \
         --file "/tmp/cargo-auditable-$(uname --machine).tar.xz" \
         "cargo-auditable-$(uname --machine)-unknown-linux-musl/cargo-auditable" \
     && rm /tmp/cargo-auditable-*.tar.xz
+
+# trixie only has mold 2.37.1
+ADD --checksum=sha256:6ff270c9bf07d2bec5c98aa324eb7c4daf6a1a4d815c05ff1708049616047855 https://github.com/rui314/mold/releases/download/v2.42.1/mold-2.42.1-x86_64-linux.tar.gz /tmp/mold-x86_64.tar.gz
+ADD --checksum=sha256:16b025652d3d7456689e6025a77e1903bb2a15e7630877c26cc133f5df95b9c6 https://github.com/rui314/mold/releases/download/v2.42.1/mold-2.42.1-aarch64-linux.tar.gz /tmp/mold-aarch64.tar.gz
+
+RUN tar --extract --gzip --no-same-owner --strip-components 2 \
+        --directory /usr/local/bin \
+        --file "/tmp/mold-$(uname --machine).tar.gz" \
+        --wildcards "*/bin/mold" \
+    && rm /tmp/mold-*.tar.gz
 
 FROM rust-base AS rust-linux-amd64
 ARG TARGET=x86_64-unknown-linux-musl

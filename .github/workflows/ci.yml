@@ -820,12 +820,15 @@ jobs:
         run: |
           apt-get update
 
-          apt-get install --no-install-recommends --yes ca-certificates curl dpkg-dev git lintian mold
+          apt-get install --no-install-recommends --yes ca-certificates curl dpkg-dev git lintian wget
 
           # the container runs as root but the checkout belongs to the runner's user, so git refuses it without this
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
       - *checkout
+
+      - name: Set up mold
+        uses: rui314/setup-mold@10ca16bf91dc22e05ebdc935cad9c75ea248f621 # v1 # zizmor: ignore[ref-version-mismatch,stale-action-refs] v1 is a floating tag
 
       - name: Set up toolchain
         shell: bash

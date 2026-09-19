@@ -10,8 +10,10 @@ permissions:
 env:
   CARGO_FEATURES: --all-features
   CARGO_INCREMENTAL: "0"
+  # `RUSTFLAGS` replaces the rustflags in `.cargo/config.toml`, so it cannot be used here
+  # https://doc.rust-lang.org/cargo/reference/config.html#buildrustflags
+  CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS: --deny=warnings
   CARGO_TERM_COLOR: always
-  RUSTFLAGS: --deny=warnings
   RUSTC_WRAPPER: "sccache"
   SCCACHE_GHA_ENABLED: "true"
 
@@ -162,7 +164,7 @@ jobs:
       - name: Build with instrumentation support
         shell: bash
         env:
-          RUSTFLAGS: "${{ env.RUSTFLAGS }} --allow=warnings -Cinstrument-coverage"
+          CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS: "${{ env.CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS }} --allow=warnings -Cinstrument-coverage"
           # build-* ones are not parsed by grcov
           LLVM_PROFILE_FILE: "profiling/build-%p-%m.profraw"
         run: |
@@ -173,7 +175,7 @@ jobs:
         shell: bash
         id: tests
         env:
-          RUSTFLAGS: "${{ env.RUSTFLAGS }} --allow=warnings -Cinstrument-coverage"
+          CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS: "${{ env.CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS }} --allow=warnings -Cinstrument-coverage"
           LLVM_PROFILE_FILE: "profiling/profile-%p-%m.profraw"
         run: |
           # shellcheck disable=SC2086 # CARGO_FEATURES can hold more than one flag
@@ -318,7 +320,7 @@ jobs:
         shell: bash
         env:
           MSRV: ${{ steps.msrv.outputs.msrv }}
-          RUSTFLAGS: ""
+          CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS: ""
         run: |
           cargo "+${MSRV}" check --locked
 

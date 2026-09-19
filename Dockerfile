@@ -2,7 +2,7 @@
 # check=skip=SecretsUsedInArgOrEnv,error=true
 
 # Rust toolchain setup
-FROM --platform=${BUILDPLATFORM} rust:1.98.1-slim-trixie@sha256:ca5c572a3d4e8acfa44bc065aa6d9dafbee398bf14ec376d2bcf955820a4c9f3 AS rust-base
+FROM --platform=${BUILDPLATFORM} rust:1.98.1-slim-trixie@sha256:8ce659250d9f7783105e69af45d78c0b2308bf78bd5640182986944efe3a4579 AS rust-base
 
 ARG APPLICATION_NAME
 ARG DEBIAN_FRONTEND=noninteractive

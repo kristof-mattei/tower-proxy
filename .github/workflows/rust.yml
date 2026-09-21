@@ -324,6 +324,45 @@ jobs:
         run: |
           cargo "+${MSRV}" check --locked
 
+  cargo-minimal-versions:
+    name: Cargo minimal versions
+    runs-on: ubuntu-26.04
+    needs:
+      - changes
+    if: |
+      github.event_name == 'pull_request' &&
+      fromJSON(needs.changes.outputs.rust) == true
+    steps:
+      - *checkout
+
+      - *set_up_mold
+
+      - *set_up_toolchain
+
+      - name: Install nightly toolchain
+        shell: bash
+        run: |
+          rustup toolchain install nightly --profile minimal
+
+      - *set_up_sccache
+
+      - name: Resolve direct dependencies to their minimal versions
+        shell: bash
+        run: |
+          cargo +nightly update -Z direct-minimal-versions
+
+      - name: Check with minimal versions
+        shell: bash
+        run: |
+          # shellcheck disable=SC2086 # CARGO_FEATURES can hold more than one flag
+          cargo check ${CARGO_FEATURES} --all-targets --locked --workspace
+
+      - name: Test with minimal versions
+        shell: bash
+        run: |
+          # shellcheck disable=SC2086 # CARGO_FEATURES can hold more than one flag
+          cargo test ${CARGO_FEATURES} --all-targets --locked --workspace
+
   cargo-docs:
     name: Cargo docs (nightly)
     runs-on: ubuntu-26.04
@@ -368,6 +407,7 @@ jobs:
       - cargo-docs
       - cargo-examples
       - cargo-fmt
+      - cargo-minimal-versions
       - cargo-msrv
       - cargo-test-and-report
     if: |

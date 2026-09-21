@@ -363,6 +363,68 @@ jobs:
           # shellcheck disable=SC2086 # CARGO_FEATURES can hold more than one flag
           cargo test ${CARGO_FEATURES} --all-targets --locked --workspace
 
+  cargo-semver-checks:
+    name: Cargo semver-checks
+    runs-on: ubuntu-26.04
+    needs:
+      - changes
+    if: |
+      github.event_name == 'pull_request' &&
+      fromJSON(needs.changes.outputs.rust) == true
+    steps:
+      - *checkout
+
+      - name: Check out the base of the pull request
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: baseline
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.base.sha }}
+          show-progress: false
+
+      # if the base is inside the working directory, `cargo semver-checks` finds the package twice and fails
+      - name: Move the base out of the working directory
+        shell: bash
+        run: |
+          mv baseline "${RUNNER_TEMP}/baseline"
+
+      - *set_up_mold
+
+      - *set_up_toolchain
+
+      - name: Install cargo-semver-checks
+        uses: taiki-e/install-action@94c31af3204a9f15ab40b35ad084410b905bbc73 # v2.87.17
+        with:
+          tool: cargo-semver-checks
+
+      - *set_up_sccache
+
+      # the version in `Cargo.toml` is only set on the release branch, so the title of the pull request decides which changes are allowed
+      - name: Determine the release type
+        id: release-type
+        shell: bash
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if [[ "${TITLE}" =~ ^[a-z]+(\([^\)]*\))?!: ]]; then
+            release_type="major"
+          elif [[ "${TITLE}" =~ ^feat(\([^\)]*\))?: ]]; then
+            release_type="minor"
+          else
+            release_type="patch"
+          fi
+
+          echo "release-type=${release_type}" >> "${GITHUB_OUTPUT}"
+
+      - name: Check the public API against the base
+        # a major release allows every change, `cargo semver-checks` then skips all of its checks
+        if: steps.release-type.outputs.release-type != 'major'
+        shell: bash
+        env:
+          RELEASE_TYPE: ${{ steps.release-type.outputs.release-type }}
+        run: |
+          cargo semver-checks --baseline-root "${RUNNER_TEMP}/baseline" --release-type "${RELEASE_TYPE}"
+
   cargo-docs:
     name: Cargo docs (nightly)
     runs-on: ubuntu-26.04
@@ -409,6 +471,7 @@ jobs:
       - cargo-fmt
       - cargo-minimal-versions
       - cargo-msrv
+      - cargo-semver-checks
       - cargo-test-and-report
     if: |
       !cancelled()

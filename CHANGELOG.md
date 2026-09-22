@@ -1,4 +1,16 @@
 <!-- header goes here -->
+## [0.10.1](https://github.com/kristof-mattei/tower-proxy/compare/v0.10.0..v0.10.1) - 2026-09-22
+
+### 🐛 Bug Fixes
+
+- *(deps)* Declare the real `tokio` minimum with its `net` feature, and move `bytes` to `[dev-dependencies]` by [@kristof-mattei](https://github.com/kristof-mattei) ([`b08d67c`](https://github.com/kristof-mattei/tower-proxy/commit/b08d67c87035d0ae89a86260dbf1c077cec1883c))
+
+### ⚙️ Miscellaneous Tasks
+
+- *(ci)* Deployed crates link to deployed version by [@kristof-mattei](https://github.com/kristof-mattei) ([`ae46c65`](https://github.com/kristof-mattei/tower-proxy/commit/ae46c657952d31fcb445012cf3fd2dbaa5cf3137))
+- Keep the mold flag in the MSRV check by [@kristof-mattei](https://github.com/kristof-mattei) ([`a05642d`](https://github.com/kristof-mattei/tower-proxy/commit/a05642de7dd39be967d122280594bab32c3f7712))
+- Build and test against the declared minimal versions by [@kristof-mattei](https://github.com/kristof-mattei) ([`25c11cf`](https://github.com/kristof-mattei/tower-proxy/commit/25c11cf47617a993e752ce184e6c01c8b1c975f8))
+- Check the public API of a pull request with `cargo semver-checks` by [@kristof-mattei](https://github.com/kristof-mattei) ([`474e773`](https://github.com/kristof-mattei/tower-proxy/commit/474e7737277724792fe83ce1ff1ad8d7c925ac9b))
 ## [0.10.0](https://github.com/kristof-mattei/tower-proxy/compare/v0.9.1..v0.10.0) - 2026-08-15
 
 ### 🚀 Features
@@ -25,12 +37,8 @@
 - *(ci)* Retry the PR number lookup when retagging the build cache by [@kristof-mattei](https://github.com/kristof-mattei) ([`0d2e88a`](https://github.com/kristof-mattei/tower-proxy/commit/0d2e88a8e91d40e49896be88e8f9d9ecc25ee6ed))
 - *(ci)* Grant issues read so test result comments work in private repos by [@kristof-mattei](https://github.com/kristof-mattei) ([`d005c4c`](https://github.com/kristof-mattei/tower-proxy/commit/d005c4c7eba096267cbbb1130e652ff6b71797f3))
 - *(ci)* Retry transient `gh api` failures in container cleanup by [@kristof-mattei](https://github.com/kristof-mattei) ([`7fbd45f`](https://github.com/kristof-mattei/tower-proxy/commit/7fbd45f01ce847d0fcba1ed4ccecef9288360a57))
-- *(deps)* Update rust crate mimalloc to 0.1.51 by [@renovate[bot]](https://github.com/renovate[bot]) ([`297ccb0`](https://github.com/kristof-mattei/tower-proxy/commit/297ccb05fd6ab86c94994ef240d04deb57450250))
-- *(deps)* Update rust crate mimalloc to 0.1.51 (#2814) by [@renovate[bot]](https://github.com/renovate[bot]) ([`bdb432d`](https://github.com/kristof-mattei/tower-proxy/commit/bdb432da30a587fbec7fa48d6e3c4b94081c9a98))
 - *(deps)* Update rust crate mimalloc to 0.1.52 by [@renovate[bot]](https://github.com/renovate[bot]) ([`1890f97`](https://github.com/kristof-mattei/tower-proxy/commit/1890f97240cf108d41c370179666282ebe343759))
-- *(deps)* Update rust crate mimalloc to 0.1.52 (#2820) by [@renovate[bot]](https://github.com/renovate[bot]) ([`f964185`](https://github.com/kristof-mattei/tower-proxy/commit/f964185dff4cee94f1a89e05ca7be9ae0d4f862a))
 - *(deps)* Pin dependencies by [@renovate[bot]](https://github.com/renovate[bot]) ([`6e3faf5`](https://github.com/kristof-mattei/tower-proxy/commit/6e3faf5afa52deaeb3d8539dc6e2f79268559d11))
-- *(deps)* Pin dependencies (#2912) by [@renovate[bot]](https://github.com/renovate[bot]) ([`46f9507`](https://github.com/kristof-mattei/tower-proxy/commit/46f9507f444363f354156e26de94617fe0539ade))
 - Only update lock file for rust dependencies by [@kristof-mattei](https://github.com/kristof-mattei) ([`cd505ec`](https://github.com/kristof-mattei/tower-proxy/commit/cd505ec0e1f5a64128cbf64c4437dc9ab1ec882f))
 - `cargo-fmt` does not need cache, and shouldn't try to restore it, worse, it could save a broken cache should `warm-up-cache` fail by [@kristof-mattei](https://github.com/kristof-mattei) ([`f30035a`](https://github.com/kristof-mattei/tower-proxy/commit/f30035a937be4e0f0ff705beb239c300b7d7c3a4))
 - Remove the `-build` in the cache name by [@kristof-mattei](https://github.com/kristof-mattei) ([`ec0649f`](https://github.com/kristof-mattei/tower-proxy/commit/ec0649fb55579105c509cadd533d83e0143eb150))
@@ -40,10 +48,6 @@
 - For markdown, decrease tabwidth by [@kristof-mattei](https://github.com/kristof-mattei) ([`775286c`](https://github.com/kristof-mattei/tower-proxy/commit/775286c57e10452aa3580f168399f48f50066e40))
 - Actionlint errors by [@kristof-mattei](https://github.com/kristof-mattei) ([`e38f3c8`](https://github.com/kristof-mattei/tower-proxy/commit/e38f3c8da6c8288fa80963b821eddb728479b2fd))
 - Downgrade request versions above HTTP/1.1 before forwarding by [@kristof-mattei](https://github.com/kristof-mattei) ([`43a4076`](https://github.com/kristof-mattei/tower-proxy/commit/43a40765b6aeb2edec401ce3519cab13298a4d43))
-
-### 💼 Other
-
-- Generate SBOM & provenance attestations, embedding the actual crate list via cargo-auditable by [@kristof-mattei](https://github.com/kristof-mattei) ([`7069ac7`](https://github.com/kristof-mattei/tower-proxy/commit/7069ac7c50b8a9c3eab63e1b31ebf77164141d7c))
 
 ### ⚙️ Miscellaneous Tasks
 
@@ -86,6 +90,10 @@
 - Update dictionary by [@kristof-mattei](https://github.com/kristof-mattei) ([`7d8dfb3`](https://github.com/kristof-mattei/tower-proxy/commit/7d8dfb3132bff15ec3d5f0a8f79279fcceb0a5a7))
 - Compute version bump offline with git-cliff by [@kristof-mattei](https://github.com/kristof-mattei) ([`5fd481c`](https://github.com/kristof-mattei/tower-proxy/commit/5fd481c61d030d20bdcaa26f2cdd1aaf8db607f2))
 - Pass `--all-features` in `generate-test-report.sh` by [@kristof-mattei](https://github.com/kristof-mattei) ([`16b162a`](https://github.com/kristof-mattei/tower-proxy/commit/16b162ab665208b514e43270457bdf66db5f01c8))
+
+### 💼 Other
+
+- Generate SBOM & provenance attestations, embedding the actual crate list via cargo-auditable by [@kristof-mattei](https://github.com/kristof-mattei) ([`7069ac7`](https://github.com/kristof-mattei/tower-proxy/commit/7069ac7c50b8a9c3eab63e1b31ebf77164141d7c))
 ## [0.9.0](https://github.com/kristof-mattei/tower-proxy/compare/v0.8.0..v0.9.0) - 2026-04-28
 
 ### 🚀 Features
@@ -165,7 +173,6 @@
 - *(ci)* Only pre-build cargo-edit when we actually build a container by [@kristof-mattei](https://github.com/kristof-mattei) ([`9bfd2a5`](https://github.com/kristof-mattei/tower-proxy/commit/9bfd2a517d7b9a9081211c94e124de3ddcf19fc3))
 - *(ci)* Surpress "warning: be sure to add `/output/bin` to your PATH to be able to run the installed binaries" by [@kristof-mattei](https://github.com/kristof-mattei) ([`77f6810`](https://github.com/kristof-mattei/tower-proxy/commit/77f681080fb7d2b399ba3944c63db8d1bbfaa169))
 - *(ci)* Use --list-different to actually list the files different by [@kristof-mattei](https://github.com/kristof-mattei) ([`37e5d53`](https://github.com/kristof-mattei/tower-proxy/commit/37e5d53fe82cf449cc43fed4a8ff33bd1e7635b4))
-- *(deps)* Update rust crate color-eyre to 0.6.3 by [@renovate[bot]](https://github.com/renovate[bot]) ([`baf1dc7`](https://github.com/kristof-mattei/tower-proxy/commit/baf1dc7b4352679914415662a2b16ec8f036d409))
 - *(deps)* Update rust crate openssl to 0.10.73 by [@renovate[bot]](https://github.com/renovate[bot]) ([`818d5d7`](https://github.com/kristof-mattei/tower-proxy/commit/818d5d763e04fc8e3f0638a9264e9c8f1aecc4cb))
 - *(deps)* Update rust crate color-eyre to 0.6.5 by [@renovate[bot]](https://github.com/renovate[bot]) ([`6cbb98d`](https://github.com/kristof-mattei/tower-proxy/commit/6cbb98dc877f5d2785ceb938f3fca30172c21bbe))
 - Enabled codecov by [@kristof-mattei](https://github.com/kristof-mattei) ([`70a7b60`](https://github.com/kristof-mattei/tower-proxy/commit/70a7b60de32c66a3c0315f67d0f8278d91fc797a))
@@ -620,7 +627,6 @@
 - Fixed title by [@kristof-mattei](https://github.com/kristof-mattei) ([`14bdc49`](https://github.com/kristof-mattei/tower-proxy/commit/14bdc49a2c8135972be93fef36a425bd9b094c80))
 - Correctly report test failure by [@kristof-mattei](https://github.com/kristof-mattei) ([`6250142`](https://github.com/kristof-mattei/tower-proxy/commit/6250142008a5f74fad09c6088fa64ec87d5c49a5))
 - Also update cargo & toolchain by [@kristof-mattei](https://github.com/kristof-mattei) ([`291be2a`](https://github.com/kristof-mattei/tower-proxy/commit/291be2aa3dd1d15c726686b0dd71ff2e35bff341))
-- Also update cargo & toolchain by [@kristof-mattei](https://github.com/kristof-mattei) ([`52e4649`](https://github.com/kristof-mattei/tower-proxy/commit/52e46491946ebb62922e3f120ec4d9b5c33f8d81))
 - Fail done properly by [@kristof-mattei](https://github.com/kristof-mattei) ([`9a420bf`](https://github.com/kristof-mattei/tower-proxy/commit/9a420bf23ae315b64a7a0d20734de30db6ac01df))
 - Made task file rust-analyzer compliant by [@kristof-mattei](https://github.com/kristof-mattei) ([`6f244be`](https://github.com/kristof-mattei/tower-proxy/commit/6f244beea8c5c8232b66f51bb1dcd0d42759d223))
 - Spacing and remove verbose by [@kristof-mattei](https://github.com/kristof-mattei) ([`abceeeb`](https://github.com/kristof-mattei/tower-proxy/commit/abceeeb0e023cd1629df3540fe5f9d310b8dbd36))
@@ -716,7 +722,6 @@
 - Ensure we have oras by [@kristof-mattei](https://github.com/kristof-mattei) ([`adb17dd`](https://github.com/kristof-mattei/tower-proxy/commit/adb17dd3071a0f100b7f9b25d5ee79b2af0594da))
 - Fix title by [@kristof-mattei](https://github.com/kristof-mattei) ([`1ecfb70`](https://github.com/kristof-mattei/tower-proxy/commit/1ecfb70f8778f65098b117403bbc1574a2f6a017))
 - Install cargo-binstall from updated url by [@kristof-mattei](https://github.com/kristof-mattei) ([`8172e7f`](https://github.com/kristof-mattei/tower-proxy/commit/8172e7fe5a8996eb4b499ccd4ee443f7e5ee2cca))
-- Rust 1.85.0 by [@kristof-mattei](https://github.com/kristof-mattei) ([`d876c00`](https://github.com/kristof-mattei/tower-proxy/commit/d876c00796252ef81adf85ea6ae8fc25b9d5e0d8))
 - Format dockerfile by [@kristof-mattei](https://github.com/kristof-mattei) ([`edb1f30`](https://github.com/kristof-mattei/tower-proxy/commit/edb1f309e3326acbad14b3b83aea65b53e12e506))
 - Fmt also 1.85.0 by [@kristof-mattei](https://github.com/kristof-mattei) ([`c9488e3`](https://github.com/kristof-mattei/tower-proxy/commit/c9488e384c6ac0816b2a02574f18e0e54eff3b12))
 - Remove oras by [@kristof-mattei](https://github.com/kristof-mattei) ([`8eceae9`](https://github.com/kristof-mattei/tower-proxy/commit/8eceae99297f4f5900549ef08f6105df530069cb))

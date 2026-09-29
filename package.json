@@ -9,7 +9,7 @@
     },
     "devDependencies": {
         "cspell": "10.3.5",
-        "oxfmt": "0.70.0"
+        "oxfmt": "0.71.0"
     },
     "engines": {
         "node": "26.10.0"

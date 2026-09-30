@@ -24,6 +24,7 @@ kristof
 lintian
 masato
 mattei
+mkhl
 monomorphization
 multiplatform
 nakata

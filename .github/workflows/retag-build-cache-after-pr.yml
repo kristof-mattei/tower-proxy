@@ -14,8 +14,7 @@ on:
   # incoming PR's artifacts?
   # in this workflow, build cache images for PRs are tagged as
   # buildcache-pr-{pr_number}-...
-  # we use the GitHub API / push event context to determine the PR number
-  # associated with this push and then retag those build cache images accordingly
+  # the incoming PR's image identifies its PR number, and we retag that PR's build cache images accordingly
   # Problem solved
 
 concurrency:
@@ -84,7 +83,6 @@ jobs:
     permissions:
       contents: read
       packages: write # retag build cache images in ghcr.io
-      pull-requests: read # resolve the PR that produced the incoming merge commit
     needs:
       - architectures
       - repo-has-container
@@ -108,7 +106,7 @@ jobs:
       - name: Retag PR build cache as main build cache
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BEFORE_SHA: ${{ github.event.before }}
           PLATFORM: ${{ matrix.platform }}
         run: |
           platform_no_slashes="${PLATFORM//\//-}"
@@ -122,36 +120,15 @@ jobs:
 
           parent2=$(git rev-parse "HEAD^2" --quiet 2>/dev/null) || true
 
-          pr_number=""
+          # ci.yml publishes the incoming PR's image under this tag, with the PR's URL as its source annotation
+          image_ref="${registry}/${image_name}:pr-${BEFORE_SHA}-${parent2}"
 
-          if [ -n "${parent2}" ]; then
-            pr_found=""
-
-            for attempt in $(seq 1 5); do
-              if ((attempt > 1)); then
-                sleep 5
-              fi
-
-              echo "Looking up the PR for ${parent2} (attempt ${attempt} of 5)"
-
-              if pr_number=$(gh api "/repos/${GITHUB_REPOSITORY}/commits/${parent2}/pulls" --jq '.[0].number'); then
-                pr_found=true
-                break
-              fi
-            done
-
-            if [ -z "${pr_found}" ]; then
-              echo "::error::PR lookup for ${parent2} failed after 5 attempts"
-              exit 1
-            fi
-          fi
-
-          if [ -z "${pr_number}" ]; then
-            echo "No PR number found, skipping cache retag"
+          if ! pr_url=$(skopeo inspect --raw --command-timeout 70s --retry-times 5 "docker://${image_ref}" 2>/dev/null | jq --raw-output '.annotations["org.opencontainers.image.source"]'); then
+            echo "Incoming PR produced no image, or there was just a push to main, skipping cache retag"
             exit 0
           fi
 
-          source_ref="${registry}/${image_name}-cache:buildcache-pr-${pr_number}-${runner_arch}-${platform_no_slashes}"
+          source_ref="${registry}/${image_name}-cache:buildcache-pr-${pr_url##*/}-${runner_arch}-${platform_no_slashes}"
 
           echo "Checking if source cache exists: ${source_ref}"
           if ! skopeo inspect --raw --command-timeout 70s --retry-times 5 "docker://${source_ref}" > /dev/null 2>&1; then

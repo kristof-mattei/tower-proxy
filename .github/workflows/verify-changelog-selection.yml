@@ -8,6 +8,8 @@ on:
       - reopened
       - synchronize
       - edited
+      # a PR above the bottom of a stack first matches `branches` on this event
+      - stacked
     branches:
       - main
 

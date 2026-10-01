@@ -28,6 +28,8 @@ env:
     amd64/v2
     amd64/v3
   REGISTRY: ghcr.io
+  # a stacked PR's `base.sha` is the head of the PR below it, not a commit on main
+  PR_BASE_SHA: ${{ github.event.pull_request.stack.base.sha || github.event.pull_request.base.sha }}
 
 jobs:
   architectures:
@@ -109,13 +111,13 @@ jobs:
         id: retag_run
         uses: $/.github/actions/wait-for-retag-run
         with:
-          sha: ${{ github.event.pull_request.base.sha }}
+          sha: ${{ env.PR_BASE_SHA }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Require the retag run to have succeeded
         shell: bash
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_SHA: ${{ env.PR_BASE_SHA }}
           CONCLUSION: ${{ steps.retag_run.outputs.conclusion }}
           URL: ${{ steps.retag_run.outputs.url }}
         run: |
@@ -144,7 +146,6 @@ jobs:
     if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'release/')
     permissions:
       contents: read
-      pull-requests: read # dorny/paths-filter reads the PR's changed files
     outputs:
       deb: ${{ steps.filter.outputs.deb }}
       docker: ${{ steps.filter.outputs.docker }}
@@ -153,14 +154,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          persist-credentials: false
+          # dorny/paths-filter fetches `PR_BASE_SHA` with the persisted credentials
+          persist-credentials: true
           show-progress: false
 
       - name: Check if we actually made changes
         uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # the API lists a stacked PR's changes against the PR below it, so the diff runs over git against `base`
+          token: ""
+          base: ${{ env.PR_BASE_SHA }}
           filters: .github/file-filters.yml
 
   calculate-version:
@@ -236,14 +240,14 @@ jobs:
       - name: Wait for the base commit's retag run
         uses: $/.github/actions/wait-for-retag-run
         with:
-          sha: ${{ github.event.pull_request.base.sha }}
+          sha: ${{ env.PR_BASE_SHA }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Compare against the version in the base commit's artifacts
         shell: bash
         id: version_moved
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_SHA: ${{ env.PR_BASE_SHA }}
           HAS_CONTAINER: ${{ needs.repo-has-container.outputs.has_container }}
           HAS_DEB: ${{ needs.repo-has-deb.outputs.has_deb }}
           VERSION: ${{ steps.version.outputs.version }}
@@ -339,7 +343,7 @@ jobs:
         shell: bash
         id: variables
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_SHA: ${{ env.PR_BASE_SHA }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           # The application name, used in the Dockerfile
@@ -488,14 +492,14 @@ jobs:
             # https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request
             # `strict_required_status_checks_policy` in `.github/settings.yml` blocks merging once base moves,
             # so if this PR merges, the merge commit on main will have this same tree
-            org.opencontainers.image.revision=${{ github.event.pull_request.base.sha }}-${{ github.event.pull_request.head.sha }}
+            org.opencontainers.image.revision=${{ env.PR_BASE_SHA }}-${{ github.event.pull_request.head.sha }}
             org.opencontainers.image.source=${{ github.event.pull_request.html_url }}
             org.opencontainers.image.vendor=${{ github.repository_owner }}
             org.opencontainers.image.version=v${{ needs.calculate-version.outputs.version }}
           labels: |
             org.opencontainers.image.authors=${{ needs.prepare-variables.outputs.authors }}
             org.opencontainers.image.description=${{ needs.prepare-variables.outputs.description }} (${{ matrix.platform }})
-            org.opencontainers.image.revision=${{ github.event.pull_request.base.sha }}-${{ github.event.pull_request.head.sha }}
+            org.opencontainers.image.revision=${{ env.PR_BASE_SHA }}-${{ github.event.pull_request.head.sha }}
             org.opencontainers.image.source=${{ github.event.pull_request.html_url }}
             org.opencontainers.image.vendor=${{ github.repository_owner }}
             org.opencontainers.image.version=v${{ needs.calculate-version.outputs.version }}
@@ -592,7 +596,7 @@ jobs:
           annotations: |
             org.opencontainers.image.authors=${{ needs.prepare-variables.outputs.authors }}
             org.opencontainers.image.description=${{ needs.prepare-variables.outputs.description }}
-            org.opencontainers.image.revision=${{ github.event.pull_request.base.sha }}-${{ github.event.pull_request.head.sha }}
+            org.opencontainers.image.revision=${{ env.PR_BASE_SHA }}-${{ github.event.pull_request.head.sha }}
             org.opencontainers.image.source=${{ github.event.pull_request.html_url }}
             org.opencontainers.image.vendor=${{ github.repository_owner }}
             org.opencontainers.image.version=v${{ needs.calculate-version.outputs.version }}
@@ -956,7 +960,7 @@ jobs:
         working-directory: ${{ steps.artifact.outputs.download-path }}
         env:
           AUTHORS: ${{ needs.prepare-variables.outputs.authors }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_SHA: ${{ env.PR_BASE_SHA }}
           FULL_DEB_NAME: ${{ needs.prepare-variables.outputs.full_deb_name_remote_registry }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_URL: ${{ github.event.pull_request.html_url }}

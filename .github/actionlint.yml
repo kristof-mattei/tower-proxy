@@ -10,3 +10,7 @@ paths:
       # actionlint does not recognize `$/` in `uses:` yet (rhysd/actionlint#732)
       - 'reusable workflow call "\$/[^"]+" at "uses" is not following the format'
       - 'specifying action "\$/[^"]+" in invalid format because ref is missing'
+  .github/workflows/verify-changelog-selection.yml:
+    ignore:
+      # actionlint does not recognize the `stacked` activity type yet
+      - 'invalid activity type "stacked" for "pull_request"'

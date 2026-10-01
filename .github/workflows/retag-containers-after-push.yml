@@ -148,6 +148,11 @@ jobs:
 
             echo "OLD_TAG=${PR_TAG}" >> "${GITHUB_ENV}"
             echo "SUFFIX=actual" >> "${GITHUB_ENV}"
+          elif grep --quiet --extended-regexp "^pr-[0-9a-f]{40}-${INCOMING_PR_HEAD_COMMIT}\$" <<< "${all_tags}"
+          then
+            # the base commit's image lacks the incoming PR's changes
+            echo "::error::The image for ${INCOMING_PR_HEAD_COMMIT} was built against a base other than ${BASE_SHA}"
+            exit 1
           else
             # If we don't have an old tag, then the incoming PR didn't produce a container.
             # In which case we're going to find the container referenced to the base commit, and add our current sha as a tag to it
@@ -328,6 +333,11 @@ jobs:
 
             old_tag="${PR_TAG}"
             suffix=actual
+          elif grep --quiet --extended-regexp "^pr-[0-9a-f]{40}-${INCOMING_PR_HEAD_COMMIT}\$" <<< "${all_tags}"
+          then
+            # the base commit's debs lack the incoming PR's changes
+            echo "::error::The Debian packages for ${INCOMING_PR_HEAD_COMMIT} were built against a base other than ${BASE_SHA}"
+            exit 1
           else
             # the incoming PR built no debs, so re-key the base commit's debs to the current sha, like the containers
             echo "Incoming PR produced nothing, or there was just a push to main"

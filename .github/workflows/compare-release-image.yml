@@ -37,6 +37,7 @@ jobs:
     name: Compare release image against latest
     runs-on: ubuntu-26.04
     permissions:
+      actions: read # list the retag runs for the base commit
       contents: read
       packages: read # pull the images being compared from ghcr.io
       pull-requests: write # docker/scout-action posts the comparison as a PR comment
@@ -48,6 +49,24 @@ jobs:
         shell: bash
         run: |
           echo "FULL_IMAGE_NAME=${REGISTRY,,}/${IMAGE_NAME,,}" >> "${GITHUB_ENV}"
+
+      - name: Find the release commit's base
+        id: base
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          base_sha=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}" --jq '.parents[0].sha')
+
+          echo "sha=${base_sha}" >> "${GITHUB_OUTPUT}"
+
+      - name: Wait for the base commit's retag run
+        id: retag_run
+        uses: $/.github/actions/wait-for-retag-run
+        with:
+          sha: ${{ steps.base.outputs.sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Docker
         uses: docker/setup-docker-action@2bf61fb9464cc67f0cbdeabed6aa0380accd1c70 # v5.5.0
@@ -69,11 +88,36 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Find the base commit's image
+        id: base_image
+        shell: bash
+        env:
+          BASE_SHA: ${{ steps.base.outputs.sha }}
+          CONCLUSION: ${{ steps.retag_run.outputs.conclusion }}
+          URL: ${{ steps.retag_run.outputs.url }}
+        run: |
+          for suffix in actual retag; do
+            if docker buildx imagetools inspect "${FULL_IMAGE_NAME}:sha-${BASE_SHA}-${suffix}" > /dev/null; then
+              echo "image=${FULL_IMAGE_NAME}:sha-${BASE_SHA}-${suffix}" >> "${GITHUB_OUTPUT}"
+              exit 0
+            fi
+          done
+
+          if [ -z "${URL}" ]; then
+            echo "::error::No retag run found for base commit ${BASE_SHA}"
+          elif [ -z "${CONCLUSION}" ]; then
+            echo "::error::Retag run ${URL} for base commit ${BASE_SHA} did not complete in time"
+          else
+            echo "::error::Retag run ${URL} for base commit ${BASE_SHA} ended with ${CONCLUSION} and left no image"
+          fi
+
+          exit 1
+
       - name: Docker Scout Compare (linux/amd64)
         uses: docker/scout-action@221e7f4860634eeb1579e3bd7ca232e577bd1864 # v1.26.0
         with:
           command: compare
-          image: "${{ env.FULL_IMAGE_NAME }}:edge"
+          image: "${{ steps.base_image.outputs.image }}"
           platform: linux/amd64
           to: "${{ env.FULL_IMAGE_NAME }}:latest"
           dockerhub-user: ${{ vars.DOCKERHUB_USERNAME }}
@@ -84,7 +128,7 @@ jobs:
         uses: docker/scout-action@221e7f4860634eeb1579e3bd7ca232e577bd1864 # v1.26.0
         with:
           command: compare
-          image: "${{ env.FULL_IMAGE_NAME }}:edge"
+          image: "${{ steps.base_image.outputs.image }}"
           platform: linux/arm64
           to: "${{ env.FULL_IMAGE_NAME }}:latest"
           dockerhub-user: ${{ vars.DOCKERHUB_USERNAME }}

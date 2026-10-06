@@ -683,7 +683,7 @@ jobs:
 
               echo "Copying ${source} to ${tag} (attempt ${attempt} of 3)"
 
-              if skopeo copy --all --preserve-digests --src-tls-verify=false --command-timeout 70s --retry-times 5 "${source}" "docker://${tag}"; then
+              if skopeo copy --all --preserve-digests --src-tls-verify=false --command-timeout 5m --retry-times 5 "${source}" "docker://${tag}"; then
                 return 0
               fi
             done
@@ -711,7 +711,7 @@ jobs:
           while IFS= read -r new_tag; do
             echo "Inspecting ${new_tag}:"
 
-            skopeo inspect --raw --command-timeout 70s --retry-times 5 "docker://${new_tag}"
+            skopeo inspect --raw --command-timeout 5m --retry-times 5 "docker://${new_tag}"
 
             # empty to get newline
             echo ""
@@ -771,24 +771,42 @@ jobs:
           subject-digest: ${{ needs.docker-publish.outputs.digest }}
           push-to-registry: true
 
+      - name: Find the base commit's image
+        id: base_image
+        shell: bash
+        env:
+          BASE_SHA: ${{ env.PR_BASE_SHA }}
+          FULL_IMAGE_NAME: ${{ needs.prepare-variables.outputs.full_image_name_remote_registry }}
+        run: |
+          for suffix in actual retag; do
+            if docker buildx imagetools inspect "${FULL_IMAGE_NAME}:sha-${BASE_SHA}-${suffix}" > /dev/null; then
+              echo "image=${FULL_IMAGE_NAME}:sha-${BASE_SHA}-${suffix}" >> "${GITHUB_OUTPUT}"
+              exit 0
+            fi
+          done
+
+          echo "::warning::No image found for base commit ${BASE_SHA}, skipping the Docker Scout comparison"
+
       - name: Docker Scout Compare (linux/amd64)
+        if: steps.base_image.outputs.image != ''
         uses: docker/scout-action@221e7f4860634eeb1579e3bd7ca232e577bd1864 # v1.26.0
         with:
           command: compare
           image: "${{ needs.prepare-variables.outputs.full_image_name_remote_registry }}:pr-${{ github.event.pull_request.number }}-latest"
           platform: linux/amd64
-          to: "${{ needs.prepare-variables.outputs.full_image_name_remote_registry }}:edge"
+          to: "${{ steps.base_image.outputs.image }}"
           dockerhub-user: ${{ vars.DOCKERHUB_USERNAME }}
           dockerhub-password: ${{ secrets.DOCKERHUB_TOKEN }}
           organization: ${{ vars.DOCKERHUB_USERNAME }}
 
       - name: Docker Scout Compare (linux/arm64)
+        if: steps.base_image.outputs.image != ''
         uses: docker/scout-action@221e7f4860634eeb1579e3bd7ca232e577bd1864 # v1.26.0
         with:
           command: compare
           image: "${{ needs.prepare-variables.outputs.full_image_name_remote_registry }}:pr-${{ github.event.pull_request.number }}-latest"
           platform: linux/arm64
-          to: "${{ needs.prepare-variables.outputs.full_image_name_remote_registry }}:edge"
+          to: "${{ steps.base_image.outputs.image }}"
           dockerhub-user: ${{ vars.DOCKERHUB_USERNAME }}
           dockerhub-password: ${{ secrets.DOCKERHUB_TOKEN }}
           organization: ${{ vars.DOCKERHUB_USERNAME }}

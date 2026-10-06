@@ -163,23 +163,14 @@ jobs:
 
       - name: Build with instrumentation support
         shell: bash
-        env:
-          CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS: "${{ env.CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS }} --allow=warnings -Cinstrument-coverage"
-          # build-* ones are not parsed by grcov
-          LLVM_PROFILE_FILE: "profiling/build-%p-%m.profraw"
         run: |
-          # shellcheck disable=SC2086 # CARGO_FEATURES can hold more than one flag
-          cargo build ${CARGO_FEATURES} --all-targets --locked --workspace
+          ./generate-test-report.sh build
 
       - name: Run nextest
         shell: bash
         id: tests
-        env:
-          CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS: "${{ env.CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS }} --allow=warnings -Cinstrument-coverage"
-          LLVM_PROFILE_FILE: "profiling/profile-%p-%m.profraw"
         run: |
-          # shellcheck disable=SC2086 # CARGO_FEATURES can hold more than one flag
-          cargo nextest run --profile ci --no-fail-fast ${CARGO_FEATURES} --all-targets --workspace
+          ./generate-test-report.sh test
         continue-on-error: true
 
       - name: Upload test results
@@ -196,22 +187,10 @@ jobs:
 
       - name: Run grcov
         shell: bash
+        env:
+          GRCOV_OUTPUT_TYPES: lcov
         run: |
-          mapfile -t profraw_files < <(find . -name "profile-*.profraw" -print)
-
-          grcov "${profraw_files[@]}" \
-            --binary-path ./target/debug/ \
-            --branch \
-            --excl-br-line "^\s*((debug_)?assert(_eq|_ne)?!)" \
-            --excl-br-start "mod tests \{" \
-            --excl-line "(#\\[derive\\()|(^\s*.await[;,]?$)" \
-            --excl-start "mod tests \{" \
-            --ignore-not-existing \
-            --keep-only "src/**" \
-            --llvm \
-            --output-path ./reports/ \
-            --output-type lcov \
-            --source-dir .
+          ./generate-test-report.sh report
 
       - name: Record Rust version
         shell: bash

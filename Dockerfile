@@ -19,8 +19,8 @@ RUN apt-get update \
         xz-utils
 
 # trixie only has cargo-auditable 0.6.6, we need >= 0.6.7 for a bare linker (see build.sh)
-ADD --checksum=sha256:42b66c852fbb9074a9ca356279a92eb753f48dde16017b8c82f48dcd05d6c856 https://github.com/rust-secure-code/cargo-auditable/releases/download/v0.7.6/cargo-auditable-x86_64-unknown-linux-musl.tar.xz /tmp/cargo-auditable-x86_64.tar.xz
-ADD --checksum=sha256:57265fbd87e9277fbd850c74177d17e5a6f51f15e2803643db65c187b0d4feda https://github.com/rust-secure-code/cargo-auditable/releases/download/v0.7.6/cargo-auditable-aarch64-unknown-linux-musl.tar.xz /tmp/cargo-auditable-aarch64.tar.xz
+ADD --checksum=sha256:7676443367c5e33d9fb22acef63cccb5e9202de12dae1b0579995eb3e2bc7a18 https://github.com/rust-secure-code/cargo-auditable/releases/download/v0.7.7/cargo-auditable-x86_64-unknown-linux-musl.tar.xz /tmp/cargo-auditable-x86_64.tar.xz
+ADD --checksum=sha256:c324af56990601354bbf40080f582ba46f8ec8b807a1388e25bb7e429d285c18 https://github.com/rust-secure-code/cargo-auditable/releases/download/v0.7.7/cargo-auditable-aarch64-unknown-linux-musl.tar.xz /tmp/cargo-auditable-aarch64.tar.xz
 
 RUN tar --extract --xz --no-same-owner --strip-components 1 \
         --directory /usr/local/cargo/bin \
@@ -29,8 +29,8 @@ RUN tar --extract --xz --no-same-owner --strip-components 1 \
     && rm /tmp/cargo-auditable-*.tar.xz
 
 # trixie only has mold 2.37.1
-ADD --checksum=sha256:6ff270c9bf07d2bec5c98aa324eb7c4daf6a1a4d815c05ff1708049616047855 https://github.com/rui314/mold/releases/download/v2.42.1/mold-2.42.1-x86_64-linux.tar.gz /tmp/mold-x86_64.tar.gz
-ADD --checksum=sha256:16b025652d3d7456689e6025a77e1903bb2a15e7630877c26cc133f5df95b9c6 https://github.com/rui314/mold/releases/download/v2.42.1/mold-2.42.1-aarch64-linux.tar.gz /tmp/mold-aarch64.tar.gz
+ADD --checksum=sha256:6c90d4a474c7c0409dfb575be03a5345878ac14fdba18de8b40fa58c60121189 https://github.com/rui314/mold/releases/download/v3.0.0/mold-3.0.0-x86_64-linux.tar.gz /tmp/mold-x86_64.tar.gz
+ADD --checksum=sha256:52c759d3689babaea4c42af2f31062a74ab83e17ffb5a8090232534c67b70577 https://github.com/rui314/mold/releases/download/v3.0.0/mold-3.0.0-aarch64-linux.tar.gz /tmp/mold-aarch64.tar.gz
 
 RUN tar --extract --gzip --no-same-owner --strip-components 2 \
         --directory /usr/local/bin \

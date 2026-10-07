@@ -3,7 +3,6 @@
 
 # And explicitly include...
 !/.cargo
-!/build-scripts
 !/Cargo.lock
 !/Cargo.toml
 !/src

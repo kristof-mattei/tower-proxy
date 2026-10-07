@@ -1,6 +1,5 @@
 shared: &shared
   - ".github/**"
-  - "build-scripts/**"
 docker:
   - *shared
   - ".dockerignore"

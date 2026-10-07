@@ -332,7 +332,7 @@ jobs:
           git diff > /tmp/version-bump.patch
 
       - name: Upload version bump patch
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           if-no-files-found: error
           name: version-bump-patch
@@ -529,7 +529,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
 
       - name: Upload artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: |
           matrix.runs-on == 'ubuntu-26.04'
         with:
@@ -924,7 +924,7 @@ jobs:
           subject-path: target/debian/*.deb
 
       - name: Upload Debian package
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           if-no-files-found: error
           name: deb-${{ matrix.arch }}

@@ -421,7 +421,6 @@ jobs:
           name: version-bump-patch
           path: .
 
-      # TODO validate no changes between github.event.pull_request.head.sha and the actual current sha (representing the hypothetical merge)
       - name: Set variables
         shell: bash
         id: variables

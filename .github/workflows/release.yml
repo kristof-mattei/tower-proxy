@@ -118,29 +118,28 @@ jobs:
           SIBLINGS_FILE: ${{ steps.siblings.outputs.file }}
           VERSION: ${{ steps.release.outputs.version }}
         run: |
-          # Only a checked entry appears in the changelog, so every unreleased commit starts excluded
+          # Every entry starts checked, so an unreleased commit is excluded only when a ballot has it unchecked
           jq --raw-output '.[0].commits[].id' ballot-context.json | sort --unique > "${RUNNER_TEMP}/unreleased.txt"
 
-          # Take the checked entries from the live bodies of the open release PRs, this branch's PR included. A toggle shows up in the body first and only reaches CHANGELOG.md on the next rebuild, so the body wins.
-          : > "${RUNNER_TEMP}/checked.txt"
+          # Take the unchecked entries from the live bodies of the open release PRs, this branch's PR included. A toggle shows up in the body first and only reaches .cliffignore on the next rebuild, so the body wins.
+          : > "${RUNNER_TEMP}/unchecked.txt"
 
           while read -r pr_number _; do
             gh api "repos/${GITHUB_REPOSITORY}/pulls/${pr_number}" --jq '.body // ""' \
-              | grep --perl-regexp --only-matching '^- \[[xX]\] .*/commit/\K[0-9a-f]{40}(?=\)\)\r?$)' >> "${RUNNER_TEMP}/checked.txt" || true
+              | grep --perl-regexp --only-matching '^- \[ \] .*/commit/\K[0-9a-f]{40}(?=\)\)\r?$)' >> "${RUNNER_TEMP}/unchecked.txt" || true
           done < "${SIBLINGS_FILE}"
 
-          # A release PR closed by hand has no body and no pending toggle left, so its branch's CHANGELOG.md is the latest selection
+          # A release PR closed by hand has no body and no pending toggle left, so its branch's .cliffignore is the latest selection
           if ! cut --delimiter=" " --fields=2 "${SIBLINGS_FILE}" | grep --quiet --fixed-strings --line-regexp "${BRANCH}" \
             && git ls-remote --exit-code --heads origin "${BRANCH}" > /dev/null; then
             git fetch origin "refs/heads/${BRANCH}"
-            git show "FETCH_HEAD:CHANGELOG.md" 2> /dev/null \
-              | grep --perl-regexp --only-matching '/commit/\K[0-9a-f]{40}(?=\)\)$)' >> "${RUNNER_TEMP}/checked.txt" || true
+            git show "FETCH_HEAD:.cliffignore" >> "${RUNNER_TEMP}/unchecked.txt" 2> /dev/null || true
           fi
 
           # Exclusions accumulate across releases, so the copy on main is the starting point
           git show HEAD:.cliffignore > .cliffignore 2> /dev/null || : > .cliffignore
 
-          grep --fixed-strings --line-regexp --invert-match --file "${RUNNER_TEMP}/checked.txt" "${RUNNER_TEMP}/unreleased.txt" >> .cliffignore || true
+          grep --fixed-strings --line-regexp --file "${RUNNER_TEMP}/unchecked.txt" "${RUNNER_TEMP}/unreleased.txt" >> .cliffignore || true
           sort --unique --output .cliffignore .cliffignore
 
           git-cliff --output CHANGELOG.md --tag "${VERSION}"

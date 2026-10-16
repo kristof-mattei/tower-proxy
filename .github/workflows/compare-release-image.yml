@@ -113,6 +113,11 @@ jobs:
 
           exit 1
 
+      - name: Preload Docker Scout
+        uses: $/.github/actions/preload-docker-scout
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Docker Scout Compare (linux/amd64)
         uses: docker/scout-action@221e7f4860634eeb1579e3bd7ca232e577bd1864 # v1.26.0
         with:

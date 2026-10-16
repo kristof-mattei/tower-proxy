@@ -822,7 +822,7 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
     # the runner's glibc is newer than Debian stable's, so the build runs in the Dockerfile's image
     container:
-      image: rust:1.99.1-slim-trixie@sha256:c3e919b2082cd9e515f5498cfd01a7f5fce09ae1b4b5af5581b4ee3533b0d107
+      image: rust:1.99.1-slim-trixie@sha256:4df2ae8cfdfebdfc13a65da7f253b73d68983dc0339f2719bc17a279c913b13d
     permissions:
       artifact-metadata: write # actions/attest
       attestations: write # actions/attest

@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+name: Preload Docker Scout
+description: Download the docker/scout-action binary with a token, so the action does not download it anonymously
+
+inputs:
+  token:
+    description: Token to download the release asset with
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Download the docker/scout-action binary
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+      run: |
+        arch="${RUNNER_ARCH,,}"
+        binary_name="docker-scout-action_linux_${arch/x64/amd64}"
+
+        for action_dir in "$(dirname "${RUNNER_WORKSPACE}")"/_actions/docker/scout-action/*/; do
+          version=$(grep --only-matching --perl-regexp '^\s*const version = "\Kv[^"]+(?=";$)' "${action_dir}index.js")
+
+          # docker/scout-action runs `dist/<binary>` when it exists instead of downloading it
+          gh release download "${version}" --repo docker/scout-action --pattern "${binary_name}" --dir "${action_dir}dist"
+        done

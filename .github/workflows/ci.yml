@@ -786,6 +786,12 @@ jobs:
 
           echo "::warning::No image found for base commit ${BASE_SHA}, skipping the Docker Scout comparison"
 
+      - name: Preload Docker Scout
+        if: steps.base_image.outputs.image != ''
+        uses: $/.github/actions/preload-docker-scout
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Docker Scout Compare (linux/amd64)
         if: steps.base_image.outputs.image != ''
         uses: docker/scout-action@221e7f4860634eeb1579e3bd7ca232e577bd1864 # v1.26.0

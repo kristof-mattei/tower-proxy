@@ -32,12 +32,12 @@ runs:
         url=""
         conclusion=""
 
-        for attempt in $(seq 1 30); do
+        for attempt in $(seq 1 20); do
           if ((attempt > 1)); then
             sleep 30
           fi
 
-          echo "Looking for the retag run of ${SHA} (attempt ${attempt} of 30)"
+          echo "Looking for the retag run of ${SHA} (attempt ${attempt} of 20)"
 
           # no run yet and a transient api error both mean retry, so don't fail here
           run=$(gh run list \

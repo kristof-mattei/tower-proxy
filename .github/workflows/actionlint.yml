@@ -20,19 +20,19 @@ jobs:
     if: ${{ !startsWith(github.head_ref, 'release/') }}
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
           show-progress: false
 
       - name: Run actionlint
-        uses: raven-actions/actionlint@3d39aea434753780c3b3d4a1a31c854b4dbf49d7 # v2.2.0
+        uses: raven-actions/actionlint@v2.2.0
         with:
           pyflakes: false
 
       # actionlint only reaches shell inside `run:` blocks, standalone scripts need their own pass
       - name: Install shellcheck
-        uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283 # v2.87.29
+        uses: taiki-e/install-action@v2.87.29
         with:
           tool: shellcheck
 

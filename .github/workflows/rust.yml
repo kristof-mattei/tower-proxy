@@ -28,14 +28,14 @@ jobs:
       rust: ${{ steps.filter.outputs.rust }}
     steps:
       - name: Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           # on push events dorny/paths-filter diffs against github.event.before over git and fetches it with the persisted credentials
           persist-credentials: true
           show-progress: false
 
       - name: Check if we actually made changes
-        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        uses: dorny/paths-filter@v4.0.3
         id: filter
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -47,14 +47,14 @@ jobs:
     steps:
       - &checkout
         name: Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
           show-progress: false
 
       - &set_up_mold
         name: Set up mold
-        uses: rui314/setup-mold@339e96b4ff1f3bd865856ba4cbbe8818a7acb038 # v1 # zizmor: ignore[ref-version-mismatch,stale-action-refs] v1 is a floating tag
+        uses: rui314/setup-mold@v1
 
       - &set_up_toolchain
         name: Set up toolchain
@@ -73,7 +73,7 @@ jobs:
 
       - &set_up_sccache
         name: Set up sccache
-        uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba # v0.0.11
+        uses: mozilla-actions/sccache-action@v0.0.11
 
       - name: Build
         shell: bash
@@ -157,7 +157,7 @@ jobs:
           rustup update
 
       - name: Install nextest, custom test runner, with native support for junit and grcov
-        uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283 # v2.87.29
+        uses: taiki-e/install-action@v2.87.29
         with:
           tool: cargo-nextest, grcov
 
@@ -178,7 +178,7 @@ jobs:
         if: |
           github.event_name != 'pull_request' ||
           github.event.pull_request.head.repo.full_name == github.repository
-        uses: EnricoMi/publish-unit-test-result-action@7622c5bf3d112a72ab4fa3951c2aa5723d8ab92d # v2.25.0
+        uses: EnricoMi/publish-unit-test-result-action@v2.25.0
         with:
           check_name: Test results for Rust
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -202,7 +202,7 @@ jobs:
         if: |
           github.event_name != 'pull_request' ||
           github.event.pull_request.head.repo.full_name == github.repository
-        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        uses: codecov/codecov-action@v7.1.1
         with:
           disable_search: true
           disable_telem: true
@@ -219,7 +219,7 @@ jobs:
         if: |
           github.event_name != 'pull_request' ||
           github.event.pull_request.head.repo.full_name == github.repository
-        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        uses: codecov/codecov-action@v7.1.1
         with:
           disable_search: true
           disable_telem: true
@@ -262,7 +262,7 @@ jobs:
       - *set_up_sccache
 
       - name: Run Clippy for GitHub Actions report
-        uses: actions-rs-plus/clippy-check@b6399906ef5e3045fc878b34b63a155f9838a891 # v2.7.1
+        uses: actions-rs-plus/clippy-check@v2.7.1
         with:
           args: ${{ env.CARGO_FEATURES }} --all-targets --locked --workspace
 
@@ -354,7 +354,7 @@ jobs:
       - *checkout
 
       - name: Check out the base of the pull request
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           path: baseline
           persist-credentials: false
@@ -372,7 +372,7 @@ jobs:
       - *set_up_toolchain
 
       - name: Install cargo-semver-checks
-        uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283 # v2.87.29
+        uses: taiki-e/install-action@v2.87.29
         with:
           tool: cargo-semver-checks
 

@@ -442,7 +442,7 @@ jobs:
           echo "buildcache_main_ref=${CACHE_IMAGE_NAME}:buildcache-main-${runner_arch}-${platform_no_slashes}" >> "${GITHUB_OUTPUT}"
 
       - name: Set up Docker
-        uses: docker/setup-docker-action@2bf61fb9464cc67f0cbdeabed6aa0380accd1c70 # v5.5.0
+        uses: docker/setup-docker-action@7ec28a010822b4626af4874f9448a4b05ac6f3e5 # v5.6.0
         with:
           daemon-config: |
             {
@@ -569,7 +569,7 @@ jobs:
       github.event_name == 'pull_request'
     steps:
       - name: Set up Docker
-        uses: docker/setup-docker-action@2bf61fb9464cc67f0cbdeabed6aa0380accd1c70 # v5.5.0
+        uses: docker/setup-docker-action@7ec28a010822b4626af4874f9448a4b05ac6f3e5 # v5.6.0
         with:
           daemon-config: |
             {
@@ -739,7 +739,7 @@ jobs:
       github.event_name == 'pull_request'
     steps:
       - name: Set up Docker
-        uses: docker/setup-docker-action@2bf61fb9464cc67f0cbdeabed6aa0380accd1c70 # v5.5.0
+        uses: docker/setup-docker-action@7ec28a010822b4626af4874f9448a4b05ac6f3e5 # v5.6.0
         with:
           daemon-config: |
             {
@@ -794,7 +794,7 @@ jobs:
 
       - name: Docker Scout Compare (linux/amd64)
         if: steps.base_image.outputs.image != ''
-        uses: docker/scout-action@221e7f4860634eeb1579e3bd7ca232e577bd1864 # v1.26.0
+        uses: docker/scout-action@a4119c5a8c5076236a54e4ce99531f7e4dd2ef84 # v1.27.0
         with:
           command: compare
           image: "${{ needs.prepare-variables.outputs.full_image_name_remote_registry }}:pr-${{ github.event.pull_request.number }}-latest"
@@ -806,7 +806,7 @@ jobs:
 
       - name: Docker Scout Compare (linux/arm64)
         if: steps.base_image.outputs.image != ''
-        uses: docker/scout-action@221e7f4860634eeb1579e3bd7ca232e577bd1864 # v1.26.0
+        uses: docker/scout-action@a4119c5a8c5076236a54e4ce99531f7e4dd2ef84 # v1.27.0
         with:
           command: compare
           image: "${{ needs.prepare-variables.outputs.full_image_name_remote_registry }}:pr-${{ github.event.pull_request.number }}-latest"

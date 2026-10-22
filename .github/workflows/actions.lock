@@ -54,7 +54,7 @@ workflows:
     '.github/workflows/publish-crate-after-release.yml':
         - 'actions/checkout@v7.0.1'
         - 'rui314/setup-mold@v1'
-        - 'rust-lang/crates-io-auth-action@v1.0.5'
+        - 'rust-lang/crates-io-auth-action@v1.0.6'
         - 'taiki-e/install-action@v2.87.29'
     '.github/workflows/rebuild-release-after-push.yml': []
     '.github/workflows/release.yml':
@@ -229,9 +229,9 @@ dependencies:
         commit: 'sha1-339e96b4ff1f3bd865856ba4cbbe8818a7acb038'
         owner_id: 47400
         repo_id: 479867630
-    'rust-lang/crates-io-auth-action@v1.0.5':
-        ref: 'v1.0.5'
-        commit: 'sha1-c6f97d42243bad5fab37ca0427f495c86d5b1a18'
+    'rust-lang/crates-io-auth-action@v1.0.6':
+        ref: 'v1.0.6'
+        commit: 'sha1-3268eb413133e2960fa4ae0e963ca76380c54cd9'
         owner_id: 5430905
         repo_id: 1008931044
     'taiki-e/install-action@v2.87.29':

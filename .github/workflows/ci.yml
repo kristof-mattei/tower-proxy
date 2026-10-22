@@ -200,7 +200,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install git-cliff to generate changelog & next version number
-        uses: taiki-e/install-action@v2.87.29
+        uses: taiki-e/install-action@v2.87.30
         with:
           tool: git-cliff
 
@@ -313,7 +313,7 @@ jobs:
           show-progress: false
 
       - name: Install cargo-edit to do set-version
-        uses: taiki-e/install-action@v2.87.29
+        uses: taiki-e/install-action@v2.87.30
         with:
           tool: cargo-edit
 
@@ -869,7 +869,7 @@ jobs:
         uses: mozilla-actions/sccache-action@v0.0.11
 
       - name: Install cargo-deb
-        uses: taiki-e/install-action@v2.87.29
+        uses: taiki-e/install-action@v2.87.30
         with:
           tool: cargo-deb
 

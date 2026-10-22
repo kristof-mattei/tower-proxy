@@ -44,8 +44,8 @@ body = """
 
     {% for commit in breaking -%}
         {{ self::print_commit(commit=commit) }}
-        {% for footer in commit.footers | filter(attribute="breaking", value=true) -%}
-            {% set description = footer.value | upper_first %}{{ "  - " ~ description }}
+        {% for footer in commit.footers | filter(attribute="breaking", value=true) %}
+            {% set description = footer.value | upper_first %}{{ "  " ~ description }}
         {% endfor -%}
     {% endfor -%}
 {% endif %}\

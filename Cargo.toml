@@ -102,6 +102,8 @@ decimal_literal_representation = { level = "deny", priority = 127 }
 # No, false positives / false negatives
 # default_numeric_fallback = { level = "deny", priority = 127 }
 default_union_representation = { level = "deny", priority = 127 }
+# No, we don't want `mod.rs`
+# definition_in_module_root = { level = "deny", priority = 127 }
 deref_by_slicing = { level = "deny", priority = 127 }
 # No, we already have `non_ascii_idents` which is even better
 # disallowed_script_idents = { level = "deny", priority = 127 }
@@ -141,6 +143,9 @@ infinite_loop = { level = "deny", priority = 127 }
 inline_asm_x86_att_syntax = { level = "deny", priority = 127 }
 # We want intel
 # inline_asm_x86_intel_syntax = { level = "deny", priority = 127 }
+inline_modules = { level = "deny", priority = 127 }
+# No, we want inline bounds
+# inline_trait_bounds = { level = "deny", priority = 127 }
 # Debatable
 # integer_division = { level = "deny", priority = 127 }
 # Debatable
@@ -208,6 +213,8 @@ redundant_test_prefix = { level = "deny", priority = 127 }
 # ref_patterns = { level = "deny", priority = 127 }
 renamed_function_params = { level = "deny", priority = 127 }
 rest_pat_in_fully_bound_structs = { level = "deny", priority = 127 }
+# No, conflicts with `unneeded_field_pattern`
+# rest_pattern_accessible_field = { level = "deny", priority = 127 }
 return_and_then = { level = "deny", priority = 127 }
 # Debatable, but probably should be turned on in the future
 # same_name_method = { level = "deny", priority = 127 }
@@ -242,6 +249,8 @@ todo = { level = "deny", priority = 127 }
 try_err = { level = "deny", priority = 127 }
 undocumented_unsafe_blocks = { level = "deny", priority = 127 }
 unimplemented = { level = "deny", priority = 127 }
+# No, we already have `rest_pat_in_fully_bound_structs`
+# unnecessary_rest_pattern = { level = "deny", priority = 127 }
 unnecessary_safety_comment = { level = "deny", priority = 127 }
 unnecessary_safety_doc = { level = "deny", priority = 127 }
 unnecessary_self_imports = { level = "deny", priority = 127 }
@@ -289,5 +298,51 @@ redundant_else = { level = "allow", priority = 127 }
 uninlined_format_args = { level = "allow", priority = 127 }
 
 [lints.rust]
+ambiguous_negative_literals = { level = "deny", priority = 127 }
+closure_returning_async_block = { level = "deny", priority = 127 }
+# No, the test harness compiles the library as a binary
+# dead_code_pub_in_binary = { level = "deny", priority = 127 }
+deprecated_in_future = { level = "deny", priority = 127 }
+deref_into_dyn_supertrait = { level = "deny", priority = 127 }
+elided_lifetimes_in_paths = { level = "deny", priority = 127 }
+explicit_outlives_requirements = { level = "deny", priority = 127 }
+ffi_unwind_calls = { level = "deny", priority = 127 }
+impl_trait_redundant_captures = { level = "deny", priority = 127 }
 let_underscore_drop = { level = "deny", priority = 127 }
+# No, reports linker output, not code
+# linker_info = { level = "deny", priority = 127 }
+macro_use_extern_crate = { level = "deny", priority = 127 }
+# No, false positives
+# meta_variable_misuse = { level = "deny", priority = 127 }
+# No, we only derive what is used
+# missing_copy_implementations = { level = "deny", priority = 127 }
+# No, we only derive what is used
+# missing_debug_implementations = { level = "deny", priority = 127 }
+# No
+# missing_docs = { level = "deny", priority = 127 }
 non_ascii_idents = { level = "deny", priority = 127 }
+redundant_imports = { level = "deny", priority = 127 }
+redundant_lifetimes = { level = "deny", priority = 127 }
+single_use_lifetimes = { level = "deny", priority = 127 }
+trivial_casts = { level = "deny", priority = 127 }
+# No, we already have `clippy::unnecessary_cast`
+# trivial_numeric_casts = { level = "deny", priority = 127 }
+# No, we already have `clippy::let_unit_value`
+# unit_bindings = { level = "deny", priority = 127 }
+unnameable_types = { level = "deny", priority = 127 }
+unreachable_pub = { level = "deny", priority = 127 }
+# No
+# unsafe_code = { level = "deny", priority = 127 }
+# No, the toolchain is stable
+# unstable_features = { level = "deny", priority = 127 }
+# No, integration test crates link every dependency
+# unused_crate_dependencies = { level = "deny", priority = 127 }
+unused_extern_crates = { level = "deny", priority = 127 }
+unused_import_braces = { level = "deny", priority = 127 }
+unused_lifetimes = { level = "deny", priority = 127 }
+unused_macro_rules = { level = "deny", priority = 127 }
+unused_qualifications = { level = "deny", priority = 127 }
+# No, `unused_must_use` already covers results that matter
+# unused_results = { level = "deny", priority = 127 }
+# No, we already have `clippy::large_enum_variant`
+# variant_size_differences = { level = "deny", priority = 127 }

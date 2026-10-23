@@ -266,7 +266,7 @@ mod test_helper {
         assert_eq!(body.unwrap().to_bytes(), expected.1);
     }
 
-    pub async fn match_path<S>(server: &mut ServerGuard, svc: &mut S)
+    pub(crate) async fn match_path<S>(server: &mut ServerGuard, svc: &mut S)
     where
         S: Service<
                 Request<String>,
@@ -296,7 +296,7 @@ mod test_helper {
         .await;
     }
 
-    pub async fn downgrade_version<S>(server: &mut ServerGuard, svc: &mut S)
+    pub(crate) async fn downgrade_version<S>(server: &mut ServerGuard, svc: &mut S)
     where
         S: Service<
                 Request<String>,
@@ -325,7 +325,7 @@ mod test_helper {
         assert_eq!(body.to_bytes(), "ok");
     }
 
-    pub async fn match_query<S>(server: &mut ServerGuard, svc: &mut S)
+    pub(crate) async fn match_query<S>(server: &mut ServerGuard, svc: &mut S)
     where
         S: Service<
                 Request<String>,
@@ -356,7 +356,7 @@ mod test_helper {
         .await;
     }
 
-    pub async fn match_post<S>(server: &mut ServerGuard, svc: &mut S)
+    pub(crate) async fn match_post<S>(server: &mut ServerGuard, svc: &mut S)
     where
         S: Service<
                 Request<String>,
@@ -389,7 +389,7 @@ mod test_helper {
         .await;
     }
 
-    pub async fn match_header<S>(server: &mut ServerGuard, svc: &mut S)
+    pub(crate) async fn match_header<S>(server: &mut ServerGuard, svc: &mut S)
     where
         S: Service<
                 Request<String>,

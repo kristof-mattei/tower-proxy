@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+name: Calculate next version
+description: Calculate the next release version from the commits since the latest tag. Needs git-cliff and a checkout with full history.
+
+outputs:
+  latest-tag:
+    description: Latest tag reachable from HEAD, empty when there is none
+    value: ${{ steps.calculate.outputs.latest-tag }}
+  next-tag:
+    description: Tag of the next release
+    value: ${{ steps.calculate.outputs.next-tag }}
+  next-version:
+    description: Version of the next release, without the `v` prefix of its tag
+    value: ${{ steps.calculate.outputs.next-version }}
+
+runs:
+  using: composite
+  steps:
+    - name: Calculate next version
+      id: calculate
+      shell: bash
+      run: |
+        # git-cliff also applies .cliffignore to --bumped-version, so a committed copy would hide commits from the version bump
+        rm --force .cliffignore
+
+        latest_tag=$(git describe --tags --abbrev=0 || true)
+
+        echo "::notice::Latest tag: ${latest_tag:-none}"
+
+        next_tag=$(git-cliff --bumped-version --bump auto --unreleased --offline)
+
+        # If git-cliff didn't bump (e.g. chore/ci only commits), force a patch increment
+        # so we never release the same version as the last tag.
+        if [ "${next_tag}" = "${latest_tag}" ]; then
+          next_tag=$(git-cliff --bumped-version --bump patch --unreleased --offline)
+          echo "::notice::No conventional bump detected, forcing patch bump"
+        fi
+
+        echo "::notice::Next tag: ${next_tag}"
+
+        {
+          echo "latest-tag=${latest_tag}"
+          echo "next-tag=${next_tag}"
+          # tags are vX.Y.Z, cargo versions are not prefixed
+          echo "next-version=${next_tag#v}"
+        } >> "${GITHUB_OUTPUT}"

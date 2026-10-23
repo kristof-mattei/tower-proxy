@@ -342,27 +342,56 @@ jobs:
           # shellcheck disable=SC2086 # CARGO_FEATURES can hold more than one flag
           cargo test ${CARGO_FEATURES} --all-targets --locked --workspace
 
+  cargo-semver-checks-baseline:
+    name: Calculate the semver-checks baseline
+    runs-on: ubuntu-slim
+    needs:
+      - changes
+    outputs:
+      latest-tag: ${{ steps.version.outputs.latest-tag }}
+      next-version: ${{ steps.version.outputs.next-version }}
+    if: |
+      github.event_name == 'pull_request' &&
+      vars.HAS_CRATE == 'true' &&
+      fromJSON(needs.changes.outputs.rust) == true
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          show-progress: false
+
+      - name: Install git-cliff to calculate the next version number
+        uses: taiki-e/install-action@v2.87.30
+        with:
+          tool: git-cliff
+
+      - name: Calculate next version
+        id: version
+        uses: $/.github/actions/calculate-next-version
+
   cargo-semver-checks:
     name: Cargo semver-checks
     runs-on: ubuntu-26.04
     needs:
-      - changes
+      - cargo-semver-checks-baseline
+    # before the first release there is no published API to break
     if: |
-      github.event_name == 'pull_request' &&
-      fromJSON(needs.changes.outputs.rust) == true
+      needs.cargo-semver-checks-baseline.outputs.latest-tag != ''
     steps:
       - *checkout
 
-      - name: Check out the base of the pull request
+      - name: Check out the latest release
         uses: actions/checkout@v7.0.1
         with:
           path: baseline
           persist-credentials: false
-          ref: ${{ github.event.pull_request.base.sha }}
+          ref: ${{ needs.cargo-semver-checks-baseline.outputs.latest-tag }}
           show-progress: false
 
-      # if the base is inside the working directory, `cargo semver-checks` finds the package twice and fails
-      - name: Move the base out of the working directory
+      # if the baseline is inside the working directory, `cargo semver-checks` finds the package twice and fails
+      - name: Move the baseline out of the working directory
         shell: bash
         run: |
           mv baseline "${RUNNER_TEMP}/baseline"
@@ -371,38 +400,27 @@ jobs:
 
       - *set_up_toolchain
 
-      - name: Install cargo-semver-checks
+      - name: Install cargo-semver-checks, and cargo-edit to do set-version
         uses: taiki-e/install-action@v2.87.30
         with:
-          tool: cargo-semver-checks
+          tool: cargo-semver-checks,cargo-edit
 
       - *set_up_sccache
 
-      # the version in `Cargo.toml` is only set on the release branch, so the title of the pull request decides which changes are allowed
-      - name: Determine the release type
-        id: release-type
+      - name: Set the released and the next version in Cargo.toml / Cargo.lock
         shell: bash
         env:
-          TITLE: ${{ github.event.pull_request.title }}
+          LATEST_TAG: ${{ needs.cargo-semver-checks-baseline.outputs.latest-tag }}
+          NEXT_VERSION: ${{ needs.cargo-semver-checks-baseline.outputs.next-version }}
         run: |
-          if [[ "${TITLE}" =~ ^[a-z]+(\([^\)]*\))?!: ]]; then
-            release_type="major"
-          elif [[ "${TITLE}" =~ ^feat(\([^\)]*\))?: ]]; then
-            release_type="minor"
-          else
-            release_type="patch"
-          fi
+          # the version is not committed, and `cargo semver-checks` derives the allowed changes from the baseline and current versions
+          cargo set-version --manifest-path "${RUNNER_TEMP}/baseline/Cargo.toml" "${LATEST_TAG#v}"
+          cargo set-version "${NEXT_VERSION}"
 
-          echo "release-type=${release_type}" >> "${GITHUB_OUTPUT}"
-
-      - name: Check the public API against the base
-        # a major release allows every change, `cargo semver-checks` then skips all of its checks
-        if: steps.release-type.outputs.release-type != 'major'
+      - name: Check the public API against the latest release
         shell: bash
-        env:
-          RELEASE_TYPE: ${{ steps.release-type.outputs.release-type }}
         run: |
-          cargo semver-checks --baseline-root "${RUNNER_TEMP}/baseline" --release-type "${RELEASE_TYPE}"
+          cargo semver-checks --baseline-root "${RUNNER_TEMP}/baseline"
 
   cargo-docs:
     name: Cargo docs (nightly)
@@ -451,6 +469,7 @@ jobs:
       - cargo-minimal-versions
       - cargo-msrv
       - cargo-semver-checks
+      - cargo-semver-checks-baseline
       - cargo-test-and-report
     if: |
       !cancelled()

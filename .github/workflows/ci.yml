@@ -179,7 +179,7 @@ jobs:
       - repo-has-container
       - repo-has-deb
     outputs:
-      version: ${{ steps.version.outputs.version }}
+      version: ${{ steps.version.outputs.next-version }}
       # the artifacts embed the predicted version, so a new version needs a rebuild
       build_container: ${{ fromJSON(needs.repo-has-container.outputs.has_container) && (fromJSON(needs.changes.outputs.docker) || fromJSON(needs.changes.outputs.rust) || fromJSON(steps.version_moved.outputs.container)) }}
       # the deb doesn't build from the Dockerfile
@@ -205,25 +205,8 @@ jobs:
           tool: git-cliff
 
       - name: Calculate next version
-        shell: bash
         id: version
-        run: |
-          latest_tag=$(git describe --tags --abbrev=0 || true)
-
-          # git-cliff also applies .cliffignore to --bumped-version, so the release branch's copy would hide commits from the version bump
-          rm --force .cliffignore
-
-          bumped=$(git-cliff --bumped-version --unreleased --offline)
-
-          # If git-cliff didn't bump (e.g. chore/ci only commits), force a patch increment
-          # so we never tag a Docker image with the same version as the last release.
-          if [ "${bumped}" = "${latest_tag}" ]; then
-            bumped=$(git-cliff --bumped-version --bump patch --unreleased --offline)
-            echo "Force bumping to ${bumped}"
-          fi
-
-          # tags are vX.Y.Z, cargo versions are not prefixed
-          echo "version=${bumped#v}" >> "${GITHUB_OUTPUT}"
+        uses: $/.github/actions/calculate-next-version
 
       - name: Set up ORAS
         uses: oras-project/setup-oras@v2.0.2
@@ -250,7 +233,7 @@ jobs:
           BASE_SHA: ${{ env.PR_BASE_SHA }}
           HAS_CONTAINER: ${{ needs.repo-has-container.outputs.has_container }}
           HAS_DEB: ${{ needs.repo-has-deb.outputs.has_deb }}
-          VERSION: ${{ steps.version.outputs.version }}
+          VERSION: ${{ steps.version.outputs.next-version }}
         run: |
           image_name="${REGISTRY,,}/${IMAGE_NAME,,}"
 

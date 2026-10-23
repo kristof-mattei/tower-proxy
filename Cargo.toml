@@ -300,7 +300,7 @@ uninlined_format_args = { level = "allow", priority = 127 }
 [lints.rust]
 ambiguous_negative_literals = { level = "deny", priority = 127 }
 closure_returning_async_block = { level = "deny", priority = 127 }
-# No, the test harness compiles the library as a binary
+# No, flags public library items in `lib test` builds, https://github.com/rust-lang/rust/issues/159078
 # dead_code_pub_in_binary = { level = "deny", priority = 127 }
 deprecated_in_future = { level = "deny", priority = 127 }
 deref_into_dyn_supertrait = { level = "deny", priority = 127 }

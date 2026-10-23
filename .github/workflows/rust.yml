@@ -400,12 +400,13 @@ jobs:
 
       - *set_up_toolchain
 
+      # `cargo-edit` builds from source through `RUSTC_WRAPPER`, so sccache has to be set up first
+      - *set_up_sccache
+
       - name: Install cargo-semver-checks, and cargo-edit to do set-version
         uses: taiki-e/install-action@v2.87.30
         with:
           tool: cargo-semver-checks,cargo-edit
-
-      - *set_up_sccache
 
       - name: Set the released and the next version in Cargo.toml / Cargo.lock
         shell: bash

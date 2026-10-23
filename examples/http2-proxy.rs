@@ -1,3 +1,8 @@
+#![expect(
+    clippy::inline_modules,
+    reason = "example runner requires examples to be self-contained"
+)]
+
 mod server {
     use std::convert::Infallible;
     use std::net::SocketAddr;

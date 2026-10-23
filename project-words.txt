@@ -51,6 +51,7 @@ skopeo's
 slurpfile
 startswith
 striptags
+supertrait
 taiki
 targetplatformdash
 telem

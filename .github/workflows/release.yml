@@ -46,55 +46,45 @@ jobs:
         with:
           tool: git-cliff
 
-      - name: Compute version and build the ballot context
+      - name: Calculate next version
+        id: version
+        uses: $/.github/actions/calculate-next-version
+
+      - name: Compute the release branch and build the ballot context
         shell: bash
         id: release
         env:
           # git-cliff reads GITHUB_TOKEN from the environment
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LATEST_TAG: ${{ steps.version.outputs.latest-tag }}
+          VERSION: ${{ steps.version.outputs.next-tag }}
         run: |
-          # git-cliff also applies .cliffignore to --bumped-version and --context, so main's copy from earlier releases would drop commits from the version bump and from the ballot
-          rm --force .cliffignore
-
-          latest_tag=$(git describe --tags --abbrev=0 || true)
-
-          echo "::notice::Latest tag: ${latest_tag:-none}"
-
-          if [ -n "${latest_tag}" ] && [ -z "$(git log "${latest_tag}..HEAD" --oneline)" ]; then
-            echo "::error::No commits since ${latest_tag}."
+          if [ -n "${LATEST_TAG}" ] && [ -z "$(git log "${LATEST_TAG}..HEAD" --oneline)" ]; then
+            echo "::error::No commits since ${LATEST_TAG}."
             exit 1
           fi
 
-          version=$(git-cliff --bumped-version --bump auto --unreleased --offline)
-
-          # If git-cliff didn't bump (e.g. chore/ci only commits), force a patch increment
-          # so we never release the same version as the last tag.
-          if [ "${version}" = "${latest_tag}" ]; then
-            version=$(git-cliff --bumped-version --bump patch --unreleased --offline)
-            echo "::notice::No conventional bump detected, forcing patch bump"
-          fi
-
-          echo "::notice::Version: ${version}"
-          echo "version=${version}" >> "${GITHUB_OUTPUT}"
-
-          branch="release/${version}"
+          branch="release/${VERSION}"
           echo "::notice::Branch: ${branch}"
           echo "branch=${branch}" >> "${GITHUB_OUTPUT}"
 
-          commit_message="chore(release): prepare for ${version}"
+          commit_message="chore(release): prepare for ${VERSION}"
           echo "commit_message=${commit_message}" >> "${GITHUB_OUTPUT}"
 
           main_sha=$(git rev-parse HEAD)
           echo "main_sha=${main_sha}" >> "${GITHUB_OUTPUT}"
 
+          # git-cliff also applies .cliffignore to --context, so main's copy from earlier releases would drop commits from the ballot
+          rm --force .cliffignore
+
           # build the context before writing .cliffignore below, the ballot has to list the excluded commits too
-          git-cliff --context --unreleased --tag "${version}" > ballot-context.json
+          git-cliff --context --unreleased --tag "${VERSION}" > ballot-context.json
 
       - name: Exclude superseded dependency bumps
         shell: bash
         id: superseded
         env:
-          VERSION: ${{ steps.release.outputs.version }}
+          VERSION: ${{ steps.version.outputs.next-tag }}
         run: |
           # Renovate bumps the same dependency several times per release. Each release keeps the newest bump of a dependency, the older ones are excluded and left off the ballot.
           # The context covers every release and is built without .cliffignore, so an excluded newest bump still supersedes the older ones.
@@ -149,7 +139,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SIBLINGS_FILE: ${{ steps.siblings.outputs.file }}
           SUPERSEDED_FILE: ${{ steps.superseded.outputs.file }}
-          VERSION: ${{ steps.release.outputs.version }}
+          VERSION: ${{ steps.version.outputs.next-tag }}
         run: |
           # Every entry starts checked, so a ballot entry is excluded only when a ballot has it unchecked
           jq --raw-output '.[0].commits[].id' ballot-context.json | sort --unique > "${RUNNER_TEMP}/unreleased.txt"
@@ -204,7 +194,7 @@ jobs:
           BRANCH: ${{ steps.release.outputs.branch }}
           DEFAULT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.TOKEN_TO_TRIGGER_SUBSEQUENT_WORKFLOWS }}
-          VERSION: ${{ steps.release.outputs.version }}
+          VERSION: ${{ steps.version.outputs.next-tag }}
         run: |
           # Check if a PR already exists for this branch
           existing_pr=$(gh pr list --head "${BRANCH}" --state open --json number --jq '.[0].number // empty')

@@ -40,7 +40,7 @@ jobs:
           cargo --version
 
       - name: Install cargo-machete to ensure we don't have unneeded packages
-        uses: taiki-e/install-action@v2.87.30
+        uses: taiki-e/install-action@v2.87.31
         with:
           tool: cargo-machete
 

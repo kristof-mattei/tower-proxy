@@ -6,10 +6,10 @@ workflows:
     '.github/workflows/actionlint.yml':
         - 'actions/checkout@v7.0.1'
         - 'raven-actions/actionlint@v2.2.0'
-        - 'taiki-e/install-action@v2.87.31'
+        - 'taiki-e/install-action@v2.87.32'
     '.github/workflows/apply-changelog-selection.yml':
         - 'actions/checkout@v7.0.1'
-        - 'taiki-e/install-action@v2.87.31'
+        - 'taiki-e/install-action@v2.87.32'
     '.github/workflows/ci.yml':
         - 'actions/attest@v4.2.2'
         - 'actions/checkout@v7.0.1'
@@ -27,7 +27,7 @@ workflows:
         - 'mozilla-actions/sccache-action@v0.0.11'
         - 'oras-project/setup-oras@v2.0.2'
         - 'rui314/setup-mold@v1'
-        - 'taiki-e/install-action@v2.87.31'
+        - 'taiki-e/install-action@v2.87.32'
     '.github/workflows/compare-release-image.yml':
         - 'docker/login-action@v4.7.0'
         - 'docker/scout-action@v1.27.0'
@@ -40,26 +40,26 @@ workflows:
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v7.1.0'
         - 'pnpm/action-setup@v6.1.0'
-        - 'taiki-e/install-action@v2.87.31'
+        - 'taiki-e/install-action@v2.87.32'
     '.github/workflows/graduate-release.yml':
         - 'actions/checkout@v7.0.1'
         - 'oras-project/setup-oras@v2.0.2'
-        - 'taiki-e/install-action@v2.87.31'
+        - 'taiki-e/install-action@v2.87.32'
     '.github/workflows/lint-commits.yml':
         - 'actions/checkout@v7.0.1'
-        - 'taiki-e/install-action@v2.87.31'
+        - 'taiki-e/install-action@v2.87.32'
     '.github/workflows/machete.yml':
         - 'actions/checkout@v7.0.1'
-        - 'taiki-e/install-action@v2.87.31'
+        - 'taiki-e/install-action@v2.87.32'
     '.github/workflows/publish-crate-after-release.yml':
         - 'actions/checkout@v7.0.1'
         - 'rui314/setup-mold@v1'
         - 'rust-lang/crates-io-auth-action@v1.0.6'
-        - 'taiki-e/install-action@v2.87.31'
+        - 'taiki-e/install-action@v2.87.32'
     '.github/workflows/rebuild-release-after-push.yml': []
     '.github/workflows/release.yml':
         - 'actions/checkout@v7.0.1'
-        - 'taiki-e/install-action@v2.87.31'
+        - 'taiki-e/install-action@v2.87.32'
     '.github/workflows/retag-build-cache-after-pr.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/github-script@v9.0.0'
@@ -87,17 +87,17 @@ workflows:
         - 'enricomi/publish-unit-test-result-action@v2.25.0'
         - 'mozilla-actions/sccache-action@v0.0.11'
         - 'rui314/setup-mold@v1'
-        - 'taiki-e/install-action@v2.87.31'
+        - 'taiki-e/install-action@v2.87.32'
     '.github/workflows/spellcheck.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v7.1.0'
         - 'pnpm/action-setup@v6.1.0'
     '.github/workflows/verify-changelog-selection.yml':
         - 'actions/checkout@v7.0.1'
-        - 'taiki-e/install-action@v2.87.31'
+        - 'taiki-e/install-action@v2.87.32'
     '.github/workflows/zizmor.yml':
         - 'actions/checkout@v7.0.1'
-        - 'taiki-e/install-action@v2.87.31'
+        - 'taiki-e/install-action@v2.87.32'
 dependencies:
     'actions-rs-plus/clippy-check@v2.7.1':
         ref: 'v2.7.1'
@@ -234,8 +234,8 @@ dependencies:
         commit: 'sha1-3268eb413133e2960fa4ae0e963ca76380c54cd9'
         owner_id: 5430905
         repo_id: 1008931044
-    'taiki-e/install-action@v2.87.31':
-        ref: 'v2.87.31'
-        commit: 'sha1-1e29709c0ec63babbe8f266397a465f29a825f91'
+    'taiki-e/install-action@v2.87.32':
+        ref: 'v2.87.32'
+        commit: 'sha1-5488ac5a951645ce95062214902ac4b6bc1a1037'
         owner_id: 43724913
         repo_id: 442947557

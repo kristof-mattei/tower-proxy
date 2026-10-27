@@ -250,7 +250,7 @@ jobs:
     if: fromJSON(needs.repo-has-deb.outputs.has_deb) == true
     steps:
       - name: Set up ORAS
-        uses: oras-project/setup-oras@v2.0.2
+        uses: oras-project/setup-oras@v2.0.3
 
       - name: Set full deb artifact name
         shell: bash

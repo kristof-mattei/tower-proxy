@@ -777,7 +777,7 @@ jobs:
 
       - name: Docker Scout Compare (linux/amd64)
         if: steps.base_image.outputs.image != ''
-        uses: docker/scout-action@v1.28.0
+        uses: docker/scout-action@v1.29.0
         with:
           command: compare
           image: "${{ needs.prepare-variables.outputs.full_image_name_remote_registry }}:pr-${{ github.event.pull_request.number }}-latest"
@@ -789,7 +789,7 @@ jobs:
 
       - name: Docker Scout Compare (linux/arm64)
         if: steps.base_image.outputs.image != ''
-        uses: docker/scout-action@v1.28.0
+        uses: docker/scout-action@v1.29.0
         with:
           command: compare
           image: "${{ needs.prepare-variables.outputs.full_image_name_remote_registry }}:pr-${{ github.event.pull_request.number }}-latest"

@@ -108,14 +108,10 @@ RUN find ./crates -type f -name '*.rs' -exec touch {} +
 
 ENV PATH="/output/bin:$PATH"
 
-# build with sources with default version number
-RUN cargo auditable build --frozen --release --target "${TARGET}"
-
 # apply version bump (if any)
 COPY ./version-bump.patch ./
 RUN [ ! -s version-bump.patch ] || patch --strip 1 < version-bump.patch
 
-# build with new version number, minor update
 # --release not needed, it is implied with install
 RUN cargo auditable install --frozen --path "./crates/${APPLICATION_NAME}/" --root /output --target "${TARGET}"
 

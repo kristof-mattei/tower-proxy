@@ -539,7 +539,7 @@ jobs:
       - deb-build
       - rust-build
     # both or neither. If only one gets published and the PR is merged anyway, main ends up with a container and a deb from different commits.
-    # Check if the event is not triggered by a fork
+    # the steps push the image to ghcr.io with the `GITHUB_TOKEN`, which is read-only in pull requests from forks
     if: |
       !cancelled() &&
       needs.docker-build.result == 'success' &&
@@ -713,13 +713,10 @@ jobs:
       - prepare-variables
       - docker-build
       - docker-publish
-    # a skipped deb-build behind docker-publish would skip this job too, so the result is checked explicitly
-    # Check if the event is not triggered by a fork
+    # skipping `deb-build` makes the default `success()` false, even when `docker-publish` succeeds
     if: |
       !cancelled() &&
-      needs.docker-publish.result == 'success' &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event_name == 'pull_request'
+      needs.docker-publish.result == 'success'
     steps:
       - name: Set up Docker
         uses: docker/setup-docker-action@v5.6.0
@@ -809,7 +806,7 @@ jobs:
     needs:
       - prepare-variables
       - docker-publish
-    # a skipped deb-build behind docker-publish would skip this job too, so the result is checked explicitly
+    # skipping `deb-build` makes the default `success()` false, even when `docker-publish` succeeds
     if: |
       !cancelled() &&
       needs.docker-publish.result == 'success'
@@ -960,7 +957,7 @@ jobs:
       - docker-build
       - rust-build
     # both artifacts or neither, see docker-publish
-    # Check if the event is not triggered by a fork
+    # the steps push the debs to ghcr.io with the `GITHUB_TOKEN`, which is read-only in pull requests from forks
     if: |
       !cancelled() &&
       needs.deb-build.result == 'success' &&

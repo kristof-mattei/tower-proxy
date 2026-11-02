@@ -276,7 +276,8 @@ jobs:
     needs:
       - graduate
       - attach-deb
-    # a skipped attach-deb still publishes, a failed one leaves the draft
+    # `attach-deb` is skipped unless `HAS_DEB` is `true`
+    # after `attach-deb` has failed, the release stays a draft
     if: |
       !cancelled() &&
       needs.graduate.result == 'success' &&

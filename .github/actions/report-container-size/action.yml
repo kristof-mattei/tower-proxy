@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+name: Report container size
+description: Upload the size of every layer of every platform image to Codecov bundle analysis.
+
+inputs:
+  image:
+    description: Reference to the image index to report
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Install pnpm
+      uses: pnpm/action-setup@v6.1.0
+
+    - name: Set up node
+      uses: actions/setup-node@v7.1.0
+      with:
+        node-version-file: package.json
+        cache: pnpm
+        cache-dependency-path: pnpm-lock.yaml
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        pnpm install --frozen-lockfile
+
+    - name: Download the image
+      shell: bash
+      env:
+        IMAGE: ${{ inputs.image }}
+      run: |
+        skopeo copy --all --preserve-digests --command-timeout 5m --retry-times 5 "docker://${IMAGE}" "oci:${RUNNER_TEMP}/container-image"
+
+    - name: Upload the layer sizes to Codecov
+      shell: bash
+      run: |
+        node .github/actions/report-container-size/report-container-size.js "${RUNNER_TEMP}/container-image"

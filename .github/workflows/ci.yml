@@ -799,6 +799,35 @@ jobs:
           dockerhub-password: ${{ secrets.DOCKERHUB_TOKEN }}
           organization: ${{ vars.DOCKERHUB_USERNAME }}
 
+  docker-size-report:
+    name: Report Docker container size
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      id-token: write # the Codecov upload authenticates over OIDC
+      packages: read # pull the PR's image from ghcr.io
+    needs:
+      - prepare-variables
+      - docker-publish
+    # a skipped deb-build behind docker-publish would skip this job too, so the result is checked explicitly
+    if: |
+      !cancelled() &&
+      needs.docker-publish.result == 'success'
+    steps:
+      - *checkout
+
+      - name: Log into registry ${{ needs.prepare-variables.outputs.registry }}
+        uses: docker/login-action@v4.7.0
+        with:
+          registry: ${{ needs.prepare-variables.outputs.registry }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Report container size
+        uses: $/.github/actions/report-container-size
+        with:
+          image: ${{ needs.prepare-variables.outputs.full_image_name_remote_registry }}@${{ needs.docker-publish.outputs.digest }}
+
   deb-build:
     name: Build Debian package for ${{ matrix.arch }}
     strategy:
@@ -1002,6 +1031,7 @@ jobs:
       - docker-build
       - docker-publish
       - docker-attest
+      - docker-size-report
       - deb-build
       - deb-publish
       - release-base-artifacts

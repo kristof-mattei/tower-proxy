@@ -1,5 +1,6 @@
+#!/usr/bin/env node
 import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import path from "node:path";
 
 import { createAndUploadReport } from "@codecov/bundle-analyzer";
 import { list } from "tar";
@@ -7,17 +8,21 @@ import { list } from "tar";
 const [layout] = process.argv.slice(2);
 
 function blobPath(digest) {
-    return join(layout, "blobs", ...digest.split(":"));
+    return path.join(layout, "blobs", ...digest.split(":"));
 }
 
-async function readJson(path) {
-    return JSON.parse(await readFile(path, "utf8"));
+async function readJson(file) {
+    return JSON.parse(await readFile(file, "utf8"));
 }
 
 async function* images(index) {
-    for (const descriptor of index.manifests) {
-        const blob = await readJson(blobPath(descriptor.digest));
+    const blobs = await Promise.all(
+        index.manifests.map(async (descriptor) => {
+            return { descriptor, blob: await readJson(blobPath(descriptor.digest)) };
+        }),
+    );
 
+    for (const { descriptor, blob } of blobs) {
         if ("manifests" in blob) {
             yield* images(blob);
         } else if (descriptor.annotations?.["vnd.docker.reference.type"] !== "attestation-manifest") {
@@ -27,8 +32,10 @@ async function* images(index) {
 }
 
 function commonPath(paths) {
-    const [first = [], ...rest] = paths.map((path) => path.split("/"));
-    let length = first.length;
+    const [first = [], ...rest] = paths.map((entryPath) => {
+        return entryPath.split("/");
+    });
+    let { length } = first;
 
     for (const segments of rest) {
         let matching = 0;
@@ -74,7 +81,7 @@ async function layerAsset(layer) {
     return { name, normalized: name, size, gzipSize: layer.size };
 }
 
-for await (const { platform, manifest } of images(await readJson(join(layout, "index.json")))) {
+for await (const { platform, manifest } of images(await readJson(path.join(layout, "index.json")))) {
     const assets = await Promise.all(manifest.layers.map(layerAsset));
 
     await createAndUploadReport(

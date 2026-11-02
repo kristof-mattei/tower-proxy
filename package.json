@@ -8,8 +8,10 @@
         "spellcheck:update": ": > project-words.txt && cspell --no-progress --words-only --unique \"**\" | tr '[:upper:]' '[:lower:]' | LC_ALL=en_US.UTF8 sort --unique > project-words.txt"
     },
     "devDependencies": {
+        "@codecov/bundle-analyzer": "2.0.1",
         "cspell": "10.4.0",
-        "oxfmt": "0.75.0"
+        "oxfmt": "0.75.0",
+        "tar": "7.5.22"
     },
     "engines": {
         "node": "26.13.0"

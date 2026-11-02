@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+name: Report container size after push
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  # Codecov compares a PR against its base commit's report, so runs for different commits must not replace each other
+  group: "${{ github.workflow }} @ ${{ github.sha }}"
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_NAME: ${{ github.repository }}
+  REGISTRY: ghcr.io
+
+jobs:
+  repo-has-container:
+    name: Repo has container?
+    runs-on: ubuntu-slim
+    outputs:
+      has_container: ${{ steps.determine.outputs.has_container }}
+    steps:
+      - name: Repo has docker container?
+        shell: bash
+        id: determine
+        env:
+          HAS_CONTAINER: ${{ vars.HAS_CONTAINER }}
+        run: |
+          echo "has_container=${HAS_CONTAINER:-false}" >> "${GITHUB_OUTPUT}"
+
+  report-container-size:
+    name: Report container size
+    runs-on: ubuntu-26.04
+    permissions:
+      actions: read # list the retag runs for this commit
+      contents: read
+      id-token: write # the Codecov upload authenticates over OIDC
+      packages: read # pull the commit's image from ghcr.io
+    needs:
+      - repo-has-container
+    if: fromJSON(needs.repo-has-container.outputs.has_container) == true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          show-progress: false
+
+      - name: Wait for this commit's retag run
+        id: retag_run
+        uses: $/.github/actions/wait-for-retag-run
+        with:
+          sha: ${{ github.sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log into registry ${{ env.REGISTRY }}
+        uses: docker/login-action@v4.7.0
+        with:
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+
+      - name: Find this commit's image
+        id: image
+        shell: bash
+        env:
+          RETAG_RUN_URL: ${{ steps.retag_run.outputs.url }}
+        run: |
+          full_image_name="${REGISTRY,,}/${IMAGE_NAME,,}"
+
+          for suffix in actual retag; do
+            if skopeo inspect --raw "docker://${full_image_name}:sha-${GITHUB_SHA}-${suffix}" > /dev/null; then
+              echo "image=${full_image_name}:sha-${GITHUB_SHA}-${suffix}" >> "${GITHUB_OUTPUT}"
+              exit 0
+            fi
+          done
+
+          echo "::error::No image found for ${GITHUB_SHA}, see its retag run ${RETAG_RUN_URL:-(not found)}"
+          exit 1
+
+      - name: Report container size
+        uses: $/.github/actions/report-container-size
+        with:
+          image: ${{ steps.image.outputs.image }}

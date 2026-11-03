@@ -236,7 +236,7 @@ jobs:
       - *set_up_sccache
 
       - name: Run Clippy for GitHub Actions report
-        uses: actions-rs-plus/clippy-check@v2.7.1
+        uses: actions-rs-plus/clippy-check@v2.8.0
         with:
           args: ${{ env.CARGO_FEATURES }} --all-targets --locked --workspace
 

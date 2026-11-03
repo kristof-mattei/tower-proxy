@@ -27,7 +27,7 @@ workflows:
         - 'dorny/paths-filter@v4.0.3'
         - 'mozilla-actions/sccache-action@v0.0.11'
         - 'oras-project/setup-oras@v2.0.3'
-        - 'pnpm/action-setup@v6.1.0'
+        - 'pnpm/action-setup@v6.1.1'
         - 'rui314/setup-mold@v1'
         - 'taiki-e/install-action@v2.90.0'
     '.github/workflows/compare-release-image.yml':
@@ -41,7 +41,7 @@ workflows:
     '.github/workflows/format.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v7.1.0'
-        - 'pnpm/action-setup@v6.1.0'
+        - 'pnpm/action-setup@v6.1.1'
         - 'taiki-e/install-action@v2.90.0'
     '.github/workflows/graduate-release.yml':
         - 'actions/checkout@v7.0.1'
@@ -66,7 +66,7 @@ workflows:
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v7.1.0'
         - 'docker/login-action@v4.7.0'
-        - 'pnpm/action-setup@v6.1.0'
+        - 'pnpm/action-setup@v6.1.1'
     '.github/workflows/retag-build-cache-after-pr.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/github-script@v9.0.0'
@@ -98,7 +98,7 @@ workflows:
     '.github/workflows/spellcheck.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/setup-node@v7.1.0'
-        - 'pnpm/action-setup@v6.1.0'
+        - 'pnpm/action-setup@v6.1.1'
     '.github/workflows/verify-changelog-selection.yml':
         - 'actions/checkout@v7.0.1'
         - 'taiki-e/install-action@v2.90.0'
@@ -218,9 +218,9 @@ dependencies:
         commit: 'sha1-5e2f2482b30b0cb3e14e67f89a80c88c659a7c63'
         owner_id: 81890686
         repo_id: 590286646
-    'pnpm/action-setup@v6.1.0':
-        ref: 'v6.1.0'
-        commit: 'sha1-ea17c68df8912ef543352723c149a84f56e3d413'
+    'pnpm/action-setup@v6.1.1':
+        ref: 'v6.1.1'
+        commit: 'sha1-73e46992e05b19abd31f2f3c20e0e7370d762115'
         owner_id: 21320719
         repo_id: 262289747
     'raven-actions/actionlint@v2.2.0':

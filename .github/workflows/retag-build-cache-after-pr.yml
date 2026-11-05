@@ -2,20 +2,13 @@
 name: Retag build cache after PR
 
 on:
-  # Triggers the workflow pushes to main. They can be either direct pushes, or PRs being merged
+  # direct pushes to main and merged PRs
   push:
     branches:
       - main
 
-  # note how we're not doing
-  # pull_request_target, as it isn't what we need.
-  # we need the push event to make it show up nicely in the UI
-  # this however brings a whole new slew of problems, like how do we identify the
-  # incoming PR's artifacts?
-  # in this workflow, build cache images for PRs are tagged as
-  # buildcache-pr-{pr_number}-...
-  # the incoming PR's image identifies its PR number, and we retag that PR's build cache images accordingly
-  # Problem solved
+  # the push event, not `pull_request_target`, so the run shows up on main in the UI
+  # a push event does not identify the incoming PR, but the incoming PR's image holds its PR number, and this workflow retags that PR's `buildcache-pr-{pr_number}-...` images
 
 concurrency:
   group: "${{ github.workflow }}"

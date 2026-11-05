@@ -223,27 +223,22 @@ wildcard_enum_match_arm = { level = "deny", priority = 127 }
 # merging ifs can hurts legibility, so it's not a good deny lint
 collapsible_if = { level = "allow", priority = 127 }
 
-# this has 0 performance implications, the binding is compiled away, and it could cause issues
-# when done blindly, plus it makes it harder to debug as you cannot put breakpoints on return
-# values of functions (yet)
+# this has 0 performance implications, the binding is compiled away, and it could cause issues when done blindly, plus it makes it harder to debug as you cannot put breakpoints on return values of functions (yet)
 let_and_return = { level = "allow", priority = 127 }
 
 # nothing we can do about multiple crate versions, so this lint just creates noise
 multiple_crate_versions = { level = "allow", priority = 127 }
 
-# this one is debatable. continue is used in places to be explicit, and to guard against
-# issues when refactoring
+# this one is debatable. continue is used in places to be explicit, and to guard against issues when refactoring
 needless_continue = { level = "allow", priority = 127 }
 
-# fights with `pattern_type_mismatch`
+# Conflicts with `pattern_type_mismatch`
 needless_borrowed_reference = { level = "allow", priority = 127 }
 
 # Conflicts with `else_if_without_else`
 redundant_else = { level = "allow", priority = 127 }
 
-# this one causes confusion when combining variables (`foo`) and
-# dereferenced variables (`foo.bar`). The latter cannot be inlined
-# so we don't inline anything
+# this one causes confusion when combining variables (`foo`) and dereferenced variables (`foo.bar`). The latter cannot be inlined so we don't inline anything
 uninlined_format_args = { level = "allow", priority = 127 }
 
 [workspace.lints.rust]
@@ -257,7 +252,7 @@ explicit_outlives_requirements = { level = "deny", priority = 127 }
 ffi_unwind_calls = { level = "deny", priority = 127 }
 impl_trait_redundant_captures = { level = "deny", priority = 127 }
 let_underscore_drop = { level = "deny", priority = 127 }
-# No, reports linker output, not code
+# No, it covers linker output, not code
 # linker_info = { level = "deny", priority = 127 }
 macro_use_extern_crate = { level = "deny", priority = 127 }
 # No, false positives

@@ -33,6 +33,7 @@ pyflakes
 rawfile
 retag
 retagging
+retags
 rhysd
 rustflags
 samply

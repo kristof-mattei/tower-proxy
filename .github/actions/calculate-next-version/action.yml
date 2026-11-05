@@ -29,8 +29,7 @@ runs:
 
         next_tag=$(git-cliff --bumped-version --bump auto --unreleased --offline)
 
-        # If git-cliff didn't bump (e.g. chore/ci only commits), force a patch increment
-        # so we never release the same version as the last tag.
+        # If git-cliff didn't bump (e.g. chore/ci only commits), force a patch increment so we never release the same version as the last tag.
         if [ "${next_tag}" = "${latest_tag}" ]; then
           next_tag=$(git-cliff --bumped-version --bump patch --unreleased --offline)
           echo "::notice::No conventional bump detected, forcing patch bump"

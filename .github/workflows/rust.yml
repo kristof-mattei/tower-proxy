@@ -211,11 +211,7 @@ jobs:
         if: |
           steps.tests.outcome != 'success'
         run: |
-          # the test reporter we use (or any for that matter)
-          # all show a report. But we cannot depend on that report because
-          # we don't know which subsection it belongs in GitHub
-          # so we explicitly fail this one
-          # which will fail All Done
+          # the test report's check run can appear in any workflow's section on GitHub, so it cannot gate All Done, this step fails the job instead
           exit 1
 
   cargo-clippy-and-report:

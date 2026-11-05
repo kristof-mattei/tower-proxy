@@ -22,7 +22,7 @@ workflows:
         - 'docker/metadata-action@v6.2.0'
         - 'docker/scout-action@v1.29.0'
         - 'docker/setup-buildx-action@v4.4.1'
-        - 'docker/setup-docker-action@v5.6.0'
+        - 'docker/setup-docker-action@v5.7.0'
         - 'docker/setup-qemu-action@v4.4.0'
         - 'dorny/paths-filter@v4.0.3'
         - 'mozilla-actions/sccache-action@v0.0.11'
@@ -34,7 +34,7 @@ workflows:
         - 'docker/login-action@v4.8.0'
         - 'docker/scout-action@v1.29.0'
         - 'docker/setup-buildx-action@v4.4.1'
-        - 'docker/setup-docker-action@v5.6.0'
+        - 'docker/setup-docker-action@v5.7.0'
     '.github/workflows/container-cleanup.yml':
         - 'actions/checkout@v7.0.1'
         - 'docker/login-action@v4.8.0'
@@ -77,14 +77,14 @@ workflows:
         - 'docker/login-action@v4.8.0'
         - 'docker/metadata-action@v6.2.0'
         - 'docker/setup-buildx-action@v4.4.1'
-        - 'docker/setup-docker-action@v5.6.0'
+        - 'docker/setup-docker-action@v5.7.0'
         - 'oras-project/setup-oras@v2.0.3'
     '.github/workflows/retag-containers-after-release.yml':
         - 'actions/attest@v4.2.2'
         - 'docker/login-action@v4.8.0'
         - 'docker/metadata-action@v6.2.0'
         - 'docker/setup-buildx-action@v4.4.1'
-        - 'docker/setup-docker-action@v5.6.0'
+        - 'docker/setup-docker-action@v5.7.0'
         - 'oras-project/setup-oras@v2.0.3'
     '.github/workflows/rust.yml':
         - 'actions-rs-plus/clippy-check@v2.8.0'
@@ -188,9 +188,9 @@ dependencies:
         commit: 'sha1-f87e5991a6d7451dcb8d9637bfbc97413f497069'
         owner_id: 5429470
         repo_id: 288485773
-    'docker/setup-docker-action@v5.6.0':
-        ref: 'v5.6.0'
-        commit: 'sha1-7ec28a010822b4626af4874f9448a4b05ac6f3e5'
+    'docker/setup-docker-action@v5.7.0':
+        ref: 'v5.7.0'
+        commit: 'sha1-3f1ab1ab0e29231562e4db4ca600c1a49653bac6'
         owner_id: 5429470
         repo_id: 398780917
     'docker/setup-qemu-action@v4.4.0':

@@ -34,11 +34,7 @@ jobs:
         run: |
           FILE="project-words.txt"
 
-          # `sort` makes sure the words are sorted and contain no duplicates.
-          #
-          # Since `sort` is sensitive to locale, we set it
-          # using LC_ALL to en_US.UTF8 to be consistent in different
-          # environments.
+          # `sort --check --unique` rejects unsorted and duplicate words, `LC_ALL=en_US.UTF8` keeps the order identical across environments
 
           (
             LC_ALL=en_US.UTF8 sort --check --unique "$FILE"

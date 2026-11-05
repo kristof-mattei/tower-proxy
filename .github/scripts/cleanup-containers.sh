@@ -417,8 +417,7 @@ for version_id in "${all_version_ids[@]}"; do
     fi
 
     # Check for untagged versions
-    # A concurrent push uploads child manifests before the tagged index, so
-    # recent untagged versions may belong to an image that is still being pushed
+    # A concurrent push uploads child manifests before the tagged index, so recent untagged versions may belong to an image that is still being pushed
     if echo "$tags" | jq --exit-status '. == []' > /dev/null 2>&1; then
         if is_older_than_days "$created_at" "$untagged_grace_days"; then
             delete_candidates["$version_id"]="untagged"

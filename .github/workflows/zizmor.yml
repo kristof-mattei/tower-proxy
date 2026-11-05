@@ -33,8 +33,7 @@ jobs:
       - name: Run zizmor
         shell: bash
         env:
-          # a token switches zizmor out of offline mode, enabling the audits that
-          # query GitHub (known-vulnerable actions, ref resolution)
+          # a token switches zizmor out of offline mode, enabling the audits that query GitHub (known-vulnerable actions, ref resolution)
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           zizmor --persona=pedantic .github

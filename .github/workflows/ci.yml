@@ -10,8 +10,7 @@ on:
       - main
 
 concurrency:
-  # each new commit to a PR runs this workflow
-  # so we need to avoid a long running older one from overwriting the "pr-<number>-latest"
+  # each new commit to a PR runs this workflow, so an older, slower run must not overwrite the newer run's "pr-<number>-latest" tag
   group: "${{ github.workflow }} @ ${{ github.ref_name }}"
   cancel-in-progress: true
 
@@ -470,10 +469,8 @@ jobs:
           annotations: |
             org.opencontainers.image.authors=${{ needs.prepare-variables.outputs.authors }}
             org.opencontainers.image.description=${{ needs.prepare-variables.outputs.description }} (${{ matrix.platform }})
-            # this image is built from the merge of head (branch) into base (main), see
-            # https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request
-            # `strict_required_status_checks_policy` in `.github/settings.yml` blocks merging once base moves,
-            # so if this PR merges, the merge commit on main will have this same tree
+            # this image is built from the merge of head (branch) into base (main), see https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request
+            # `strict_required_status_checks_policy` in `.github/settings.yml` blocks merging once base moves, so if this PR merges, the merge commit on main will have this same tree
             org.opencontainers.image.revision=${{ env.PR_BASE_SHA }}-${{ github.event.pull_request.head.sha }}
             org.opencontainers.image.source=${{ github.event.pull_request.html_url }}
             org.opencontainers.image.vendor=${{ github.repository_owner }}
@@ -495,8 +492,7 @@ jobs:
           build-args: |
             APPLICATION_NAME=${{ needs.prepare-variables.outputs.application_name }}
           context: .
-          # this container is THE PR's artifact, and we will re-tag it
-          # once the PR has been accepted
+          # this container is THE PR's artifact, and we will re-tag it once the PR has been accepted
           cache-from: |
             type=registry,ref=${{ steps.variables.outputs.buildcache_pr_ref }}
             type=registry,ref=${{ steps.variables.outputs.buildcache_main_ref }}
@@ -625,8 +621,7 @@ jobs:
             new_annotations+=("${annotation}")
           done <<< "${ANNOTATIONS}"
 
-          # merge the platform containers in a new multiplatform one
-          # with the new annotations, and push it to our local registry
+          # merge the platform containers in a new multiplatform one with the new annotations, and push it to our local registry
           docker buildx imagetools create "${new_annotations[@]}" --tag "${LOCAL_IMAGE_NAME}:${UNIQUE_TAG}" \
             "${platforms[@]}"
 
@@ -676,9 +671,8 @@ jobs:
 
           exit_code=0
 
-          # this used to be parallel, but that gives occasional error 500 with ghcr.io:
-          # https://github.com/orgs/community/discussions/187118
-          # try to upload all of them, if one of them fails, upload the other ones and fail
+          # sequential, because parallel uploads to ghcr.io fail with an occasional error 500 (https://github.com/orgs/community/discussions/187118)
+          # a failed upload does not stop the others, the step fails after the last one
           while IFS= read -r tag; do
             copy_with_retries "${tag}" || exit_code=1
           done <<< "${NEW_TAGS}"
@@ -738,10 +732,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # note that we use the digest of the local image
-      # these digests don't change after pushing, but
-      # since we deal with tags (mutable), and the way to get a digest is to use the tag, I prefer
-      # sourcing the digest from the local registry we just spun up (trusted)
+      # the digest comes from the local registry spun up in this run (trusted): digests do not change after pushing, but a digest is only reachable through a tag, and tags are mutable
       - name: Generate artifact attestation
         uses: actions/attest@v4.2.2
         id: attestation

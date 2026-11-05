@@ -70,10 +70,7 @@ RUN if [ "$(dpkg --print-architecture)" != "${TARGETARCH}" ]; then dpkg --add-ar
 
 RUN rustup target add ${TARGET}
 
-# The following block
-# creates an empty app, and we copy in Cargo.toml and Cargo.lock as they represent our dependencies
-# This allows us to copy in the source in a different layer which in turn allows us to leverage Docker's layer caching
-# That means that if our dependencies don't change rebuilding is much faster
+# building an empty app with only the manifests and Cargo.lock puts the dependencies in their own layer, which Docker's layer cache reuses while they do not change
 WORKDIR /build
 COPY ./.cargo ./.cargo
 COPY ./Cargo.toml ./Cargo.lock ./
@@ -103,7 +100,7 @@ WORKDIR /build
 # now we copy in the source which is more prone to changes and build it
 COPY ./crates ./crates
 
-# ensure cargo picks up on the fact that we copied in our code
+# the copied sources get a newer mtime than the empty app's build, so cargo rebuilds them
 RUN find ./crates -type f -name '*.rs' -exec touch {} +
 
 ENV PATH="/output/bin:$PATH"

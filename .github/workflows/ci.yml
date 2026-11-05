@@ -425,7 +425,7 @@ jobs:
           echo "buildcache_main_ref=${CACHE_IMAGE_NAME}:buildcache-main-${runner_arch}-${platform_no_slashes}" >> "${GITHUB_OUTPUT}"
 
       - name: Set up Docker
-        uses: docker/setup-docker-action@v5.6.0
+        uses: docker/setup-docker-action@v5.7.0
         with:
           daemon-config: |
             {
@@ -552,7 +552,7 @@ jobs:
       github.event_name == 'pull_request'
     steps:
       - name: Set up Docker
-        uses: docker/setup-docker-action@v5.6.0
+        uses: docker/setup-docker-action@v5.7.0
         with:
           daemon-config: |
             {
@@ -719,7 +719,7 @@ jobs:
       needs.docker-publish.result == 'success'
     steps:
       - name: Set up Docker
-        uses: docker/setup-docker-action@v5.6.0
+        uses: docker/setup-docker-action@v5.7.0
         with:
           daemon-config: |
             {

@@ -57,7 +57,7 @@ jobs:
       fromJSON(needs.repo-has-container.outputs.has_container) == true
     steps:
       - name: Set up Docker
-        uses: docker/setup-docker-action@v5.6.0
+        uses: docker/setup-docker-action@v5.7.0
         with:
           daemon-config: |
             {

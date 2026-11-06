@@ -7,14 +7,12 @@ FROM --platform=${BUILDPLATFORM} rust:1.99.1-slim-trixie@sha256:7eab7ce19273ce78
 ARG APPLICATION_NAME
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN rm -f /etc/apt/apt.conf.d/docker-clean \
-    && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
-
 RUN apt-get update \
     && apt-get upgrade --yes \
     && apt-get install --no-install-recommends --yes \
         patch \
-        xz-utils
+        xz-utils \
+    && rm --recursive --force /var/lib/apt/lists/*
 
 # trixie only has cargo-auditable 0.6.6, we need >= 0.6.7 for a bare linker
 ADD --checksum=sha256:7676443367c5e33d9fb22acef63cccb5e9202de12dae1b0579995eb3e2bc7a18 https://github.com/rust-secure-code/cargo-auditable/releases/download/v0.7.7/cargo-auditable-x86_64-unknown-linux-musl.tar.xz /tmp/cargo-auditable-x86_64.tar.xz
@@ -66,9 +64,10 @@ ARG CARGO_TARGET_DIR=/build/target/${TARGETPLATFORMDASH}
 # Debian architecture names match TARGETARCH for amd64 and arm64
 RUN if [ "$(dpkg --print-architecture)" != "${TARGETARCH}" ]; then dpkg --add-architecture "${TARGETARCH}"; fi \
     && apt-get update \
-    && apt-get install --no-install-recommends --yes "musl-tools:${TARGETARCH}"
+    && apt-get install --no-install-recommends --yes "musl-tools:${TARGETARCH}" \
+    && rm --recursive --force /var/lib/apt/lists/*
 
-RUN rustup target add ${TARGET}
+RUN rustup target add "${TARGET}"
 
 # building an empty app with only the manifests and Cargo.lock puts the dependencies in their own layer, which Docker's layer cache reuses while they do not change
 WORKDIR /build
@@ -77,9 +76,9 @@ COPY ./Cargo.toml ./Cargo.lock ./
 
 # main crate
 WORKDIR /build/crates/
-RUN cargo new --bin --vcs none ${APPLICATION_NAME}
+RUN cargo new --bin --vcs none "${APPLICATION_NAME}"
 COPY ./crates/${APPLICATION_NAME}/Cargo.toml ./${APPLICATION_NAME}/Cargo.toml
-RUN echo "fn main() {}" > ./${APPLICATION_NAME}/src/build.rs
+RUN echo "fn main() {}" > "./${APPLICATION_NAME}/src/build.rs"
 
 # repeat this for each crate
 WORKDIR /build/crates/

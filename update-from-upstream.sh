@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# fetch so we can merge in without first
-# having to checkout & pull the branches
+# fetch so the merge does not need a checkout and pull of each branch
 git fetch origin
 git fetch upstream
 

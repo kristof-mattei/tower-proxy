@@ -2,24 +2,17 @@
 name: Retag containers after new push / PR
 
 on:
-  # Triggers the workflow pushes to main. They can be either direct pushes, or PRs being merged
+  # direct pushes to main and merged PRs
   push:
     branches:
       - main
 
-  # note how we're not doing
-  # pull_request_target, as it isn't what we need.
-  # we need the push event to make it show up nicely in the UI
-  # this however brings a whole new slew of problems, like how do we identify the
-  # incoming PR's artifacts?
-  # well, we set a tag on that PR's artifact, in the form of
-  # pr-{head_of_pr}-{pr_head_of_main}
-  # when with git rev-parse HEAD^2 we can find the incoming PR's head
-  # Problem solved
+  # the push event, not `pull_request_target`, so the run shows up on main in the UI
+  # a push event does not identify the incoming PR, so CI tags the PR's artifact `pr-{head_of_pr}-{pr_head_of_main}`, and `git rev-parse HEAD^2` returns the incoming PR's head
 
 concurrency:
   group: "${{ github.workflow }}" # last one must win
-  cancel-in-progress: false # no we need them
+  cancel-in-progress: false # the next push looks up the tags this run creates
 
 permissions:
   contents: read
@@ -80,9 +73,7 @@ jobs:
           echo "BASE_SHA=${BEFORE_SHA}" >> "${GITHUB_ENV}"
 
           exit_code=0
-          # a commit always has a parent, but if it has 2, the commit is a merge
-          # so lets see if we have one
-          # since we're listening to the push event we have to do this manually
+          # only a merge commit has a second parent, the push event does not include the incoming PR
           parent2=$(git rev-parse "HEAD^2" --quiet 2>/dev/null) || exit_code=$?
 
           if [ ${exit_code} -eq 0 ]
@@ -154,14 +145,11 @@ jobs:
             echo "::error::The image for ${INCOMING_PR_HEAD_COMMIT} was built against a base other than ${BASE_SHA}"
             exit 1
           else
-            # If we don't have an old tag, then the incoming PR didn't produce a container.
-            # In which case we're going to find the container referenced to the base commit, and add our current sha as a tag to it
+            # without a PR tag the incoming PR built no container, so the base commit's container gets this commit's sha as a tag
 
             echo "Incoming PR produced nothing, or there was just a push to main"
 
-            # so we find the last commit that github processed before this one
-            # which will have gone through the same retagging process
-            # and use that sha as our key to find the Docker container related to that commit
+            # the base commit went through this same retag, so its `sha-<base>-*` tag points to the container
             old_tag=$(echo "${all_tags}" | grep "^sha-${BASE_SHA}-.*\$") || true # .* is actual or retag
 
             if [ -z "${old_tag}" ]

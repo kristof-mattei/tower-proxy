@@ -41,6 +41,7 @@ rawfile
 replacen
 retag
 retagging
+retags
 rhysd
 rustdocflags
 rustflags

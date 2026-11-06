@@ -67,7 +67,7 @@ RUN if [ "$(dpkg --print-architecture)" != "${TARGETARCH}" ]; then dpkg --add-ar
     && apt-get install --no-install-recommends --yes "musl-tools:${TARGETARCH}" \
     && rm --recursive --force /var/lib/apt/lists/*
 
-RUN rustup target add ${TARGET}
+RUN rustup target add "${TARGET}"
 
 # building an empty app with only the manifests and Cargo.lock puts the dependencies in their own layer, which Docker's layer cache reuses while they do not change
 WORKDIR /build
@@ -76,9 +76,9 @@ COPY ./Cargo.toml ./Cargo.lock ./
 
 # main crate
 WORKDIR /build/crates/
-RUN cargo new --bin --vcs none ${APPLICATION_NAME}
+RUN cargo new --bin --vcs none "${APPLICATION_NAME}"
 COPY ./crates/${APPLICATION_NAME}/Cargo.toml ./${APPLICATION_NAME}/Cargo.toml
-RUN echo "fn main() {}" > ./${APPLICATION_NAME}/src/build.rs
+RUN echo "fn main() {}" > "./${APPLICATION_NAME}/src/build.rs"
 
 # repeat this for each crate
 WORKDIR /build/crates/

@@ -37,6 +37,7 @@ pkgs
 postprocessors
 profraw
 pyflakes
+qlty
 rawfile
 replacen
 retag

@@ -57,6 +57,8 @@ ARG TARGETARCH
 ARG TARGETOS
 # v2, v3 or empty
 ARG TARGETVARIANT
+# Rust target triple, set in `rust-linux-amd64` or `rust-linux-arm64`
+ARG TARGET
 # like TARGETPLATFORM, but with dashes
 ARG TARGETPLATFORMDASH="${TARGETOS}-${TARGETARCH}-${TARGETVARIANT:-base}"
 ARG CARGO_TARGET_DIR=/build/target/${TARGETPLATFORMDASH}

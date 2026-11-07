@@ -1,0 +1,10 @@
+config_version = "0"
+
+[[source]]
+name = "default"
+default = true
+
+[[source]]
+name = "kristof-mattei"
+repository = "https://github.com/kristof-mattei/qlty-config"
+branch = "main"

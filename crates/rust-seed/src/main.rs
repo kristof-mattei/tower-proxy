@@ -30,7 +30,7 @@ fn print_header() {
     let build_env = get_build_env();
 
     println!(
-        "{} v{} - built for {} ({})",
+        "{} v{}, built for {} ({})",
         NAME,
         VERSION,
         build_env.get_target(),

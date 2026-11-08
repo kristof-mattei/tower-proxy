@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`tower-proxy` is [tower](https://crates.io/crates/tower) `Service`s that allows it to reverse proxy requests.
+`tower-proxy` provides [tower](https://crates.io/crates/tower) `Service`s that reverse proxy requests.
 
 These `Service`s are implemented to be used in [axum](https://crates.io/crates/axum), but can also be used in a more general situation.
 
@@ -12,6 +12,6 @@ This crate was forked from https://github.com/manorom/reverse-proxy-service, & t
 
 ## License
 
-MIT OR Apache-2.0, see [LICENSE-MIT](./LICENSE-MIT) OR [LICENSE-Apache-2.0](./LICENSE-Apache-2.0)
+MIT OR Apache-2.0, see [LICENSE-MIT](./LICENSE-MIT) OR [LICENSE-APACHE](./LICENSE-APACHE)
 
 `SPDX-License-Identifier: MIT OR Apache-2.0`

@@ -26,7 +26,7 @@ jobs:
           show-progress: false
 
       - name: Run actionlint
-        uses: raven-actions/actionlint@v2.2.0
+        uses: kjanat/actionlint@v1.17.1
         with:
           pyflakes: false
 

@@ -197,52 +197,53 @@ jobs:
         run: |
           echo "RUST=$(rustc --version)" >> "$GITHUB_ENV"
 
-      - name: Upload coverage results (to Codecov.io)
-        # fork PRs run without id-token, so OIDC upload cannot work. Push runs must keep uploading to preserve base coverage
-        if: |
-          github.event_name != 'pull_request' ||
-          github.event.pull_request.head.repo.full_name == github.repository
-        uses: codecov/codecov-action@v7.1.1
-        with:
-          disable_search: true
-          disable_telem: true
-          env_vars: RUNNER_OS,RUST
-          fail_ci_if_error: true
-          flags: tests
-          files: reports/lcov
-          name: code-coverage
-          plugins: noop
-          report_type: "coverage"
-          use_oidc: true
+      - parallel:
+          - name: Upload coverage results (to Codecov.io)
+            # fork PRs run without id-token, so OIDC upload cannot work. Push runs must keep uploading to preserve base coverage
+            if: |
+              github.event_name != 'pull_request' ||
+              github.event.pull_request.head.repo.full_name == github.repository
+            uses: codecov/codecov-action@v7.1.1
+            with:
+              disable_search: true
+              disable_telem: true
+              env_vars: RUNNER_OS,RUST
+              fail_ci_if_error: true
+              flags: tests
+              files: reports/lcov
+              name: code-coverage
+              plugins: noop
+              report_type: "coverage"
+              use_oidc: true
 
-      - name: Upload coverage results (to Qlty)
-        if: |
-          github.event_name != 'pull_request' ||
-          github.event.pull_request.head.repo.full_name == github.repository
-        uses: qltysh/qlty-action/coverage@v2.5.0
-        with:
-          files: reports/lcov
-          format: lcov
-          oidc: true
-          skip-errors: false
-          tag: tests
+          - name: Upload coverage results (to Qlty)
+            if: |
+              github.event_name != 'pull_request' ||
+              github.event.pull_request.head.repo.full_name == github.repository
+            uses: qltysh/qlty-action/coverage@v2.5.0
+            with:
+              files: reports/lcov
+              format: lcov
+              oidc: true
+              skip-errors: false
+              tag: tests
 
-      - name: Upload test results (to Codecov.io)
-        if: |
-          github.event_name != 'pull_request' ||
-          github.event.pull_request.head.repo.full_name == github.repository
-        uses: codecov/codecov-action@v7.1.1
-        with:
-          disable_search: true
-          disable_telem: true
-          env_vars: RUNNER_OS,RUST
-          fail_ci_if_error: true
-          flags: tests
-          files: reports/results.xml
-          name: test-results
-          plugins: noop
-          report_type: "test_results"
-          use_oidc: true
+          - name: Upload test results (to Codecov.io)
+            if: |
+              github.event_name != 'pull_request' ||
+              github.event.pull_request.head.repo.full_name == github.repository
+            uses: codecov/codecov-action@v7.1.1
+            with:
+              disable_search: true
+              disable_telem: true
+              env_vars: RUNNER_OS,RUST
+              fail_ci_if_error: true
+              flags: tests
+              files: reports/results.xml
+              name: test-results
+              plugins: noop
+              report_type: "test_results"
+              use_oidc: true
 
       - name: Fail if tests failed
         shell: bash

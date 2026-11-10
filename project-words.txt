@@ -15,6 +15,7 @@ errorlens
 grcov
 headgreen
 idents
+kjanat
 kristof
 lintian
 mattei

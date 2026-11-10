@@ -38,6 +38,7 @@ postprocessors
 profraw
 pyflakes
 qlty
+qltysh
 rawfile
 replacen
 retag

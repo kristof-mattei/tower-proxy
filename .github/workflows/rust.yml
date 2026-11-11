@@ -52,28 +52,29 @@ jobs:
           persist-credentials: false
           show-progress: false
 
-      - &set_up_mold
-        name: Set up mold
-        uses: rui314/setup-mold@v1
+      - parallel:
+          - &set_up_mold
+            name: Set up mold
+            uses: rui314/setup-mold@v1
 
-      - &set_up_toolchain
-        name: Set up toolchain
-        shell: bash
-        run: |
-          rm "${HOME}/.cargo/bin/cargo-fmt"
-          rm "${HOME}/.cargo/bin/rust-analyzer"
-          rm "${HOME}/.cargo/bin/rustfmt"
+          - &set_up_toolchain
+            name: Set up toolchain
+            shell: bash
+            run: |
+              rm "${HOME}/.cargo/bin/cargo-fmt"
+              rm "${HOME}/.cargo/bin/rust-analyzer"
+              rm "${HOME}/.cargo/bin/rustfmt"
 
-          rustup self update
-          rustup update
-          rustup show active-toolchain || rustup toolchain install
-          rustup show
+              rustup self update
+              rustup update
+              rustup show active-toolchain || rustup toolchain install
+              rustup show
 
-          cargo --version
+              cargo --version
 
-      - &set_up_sccache
-        name: Set up sccache
-        uses: mozilla-actions/sccache-action@v0.0.11
+          - &set_up_sccache
+            name: Set up sccache
+            uses: mozilla-actions/sccache-action@v0.0.11
 
       - name: Build
         shell: bash
@@ -92,11 +93,12 @@ jobs:
     steps:
       - *checkout
 
-      - *set_up_mold
+      - parallel:
+          - *set_up_mold
 
-      - *set_up_toolchain
+          - *set_up_toolchain
 
-      - *set_up_sccache
+          - *set_up_sccache
 
       - name: Run examples
         shell: bash
@@ -142,11 +144,12 @@ jobs:
     steps:
       - *checkout
 
-      - *set_up_mold
+      - parallel:
+          - *set_up_mold
 
-      - *set_up_toolchain
+          - *set_up_toolchain
 
-      - *set_up_sccache
+          - *set_up_sccache
 
       - name: Install llvm-tools
         shell: bash
@@ -266,11 +269,12 @@ jobs:
     steps:
       - *checkout
 
-      - *set_up_mold
+      - parallel:
+          - *set_up_mold
 
-      - *set_up_toolchain
+          - *set_up_toolchain
 
-      - *set_up_sccache
+          - *set_up_sccache
 
       - name: Run Clippy for GitHub Actions report
         uses: actions-rs-plus/clippy-check@v2.8.0
@@ -288,8 +292,6 @@ jobs:
     steps:
       - *checkout
 
-      - *set_up_mold
-
       - name: Get MSRV from Cargo.toml
         id: msrv
         shell: bash
@@ -297,14 +299,17 @@ jobs:
           msrv=$(cargo metadata --format-version 1 --no-deps | jq '.packages[] | .rust_version' --raw-output)
           echo "msrv=${msrv}" >> "${GITHUB_OUTPUT}"
 
-      - name: Install MSRV toolchain
-        shell: bash
-        env:
-          MSRV: ${{ steps.msrv.outputs.msrv }}
-        run: |
-          rustup toolchain install "${MSRV}" --profile minimal
+      - parallel:
+          - *set_up_mold
 
-      - *set_up_sccache
+          - name: Install MSRV toolchain
+            shell: bash
+            env:
+              MSRV: ${{ steps.msrv.outputs.msrv }}
+            run: |
+              rustup toolchain install "${MSRV}" --profile minimal
+
+          - *set_up_sccache
 
       - name: Check with MSRV
         shell: bash
@@ -325,16 +330,17 @@ jobs:
     steps:
       - *checkout
 
-      - *set_up_mold
+      - parallel:
+          - *set_up_mold
 
-      - *set_up_toolchain
+          - *set_up_toolchain
+
+          - *set_up_sccache
 
       - name: Install nightly toolchain
         shell: bash
         run: |
           rustup toolchain install nightly --profile minimal
-
-      - *set_up_sccache
 
       - name: Resolve direct dependencies to their minimal versions
         shell: bash
@@ -407,12 +413,13 @@ jobs:
         run: |
           mv baseline "${RUNNER_TEMP}/baseline"
 
-      - *set_up_mold
+      - parallel:
+          - *set_up_mold
 
-      - *set_up_toolchain
+          - *set_up_toolchain
 
-      # `cargo-edit` builds from source through `RUSTC_WRAPPER`, so sccache has to be set up first
-      - *set_up_sccache
+          # `cargo-edit` builds from source through `RUSTC_WRAPPER`, so sccache has to be set up first
+          - *set_up_sccache
 
       - name: Install cargo-semver-checks, and cargo-edit to do set-version
         uses: taiki-e/install-action@v2.90.3
@@ -445,14 +452,15 @@ jobs:
     steps:
       - *checkout
 
-      - *set_up_mold
+      - parallel:
+          - *set_up_mold
 
-      - name: Install nightly toolchain
-        shell: bash
-        run: |
-          rustup toolchain install nightly --profile minimal
+          - name: Install nightly toolchain
+            shell: bash
+            run: |
+              rustup toolchain install nightly --profile minimal
 
-      - *set_up_sccache
+          - *set_up_sccache
 
       - name: Build docs
         shell: bash

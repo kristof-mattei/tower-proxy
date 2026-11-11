@@ -173,30 +173,49 @@ jobs:
           ./generate-test-report.sh test
         continue-on-error: true
 
-      - name: Upload test results
-        # fork PRs run with a read-only token, which cannot create check runs or PR comments
-        if: |
-          github.event_name != 'pull_request' ||
-          github.event.pull_request.head.repo.full_name == github.repository
-        uses: EnricoMi/publish-unit-test-result-action@v2.26.0
-        with:
-          check_name: Test results for Rust
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          files: |
-            reports/results.xml
-
-      - name: Run grcov
-        shell: bash
-        env:
-          GRCOV_OUTPUT_TYPES: lcov
-        run: |
-          ./generate-test-report.sh report
-
       - name: Record Rust version
         shell: bash
         run: |
           echo "RUST=$(rustc --version)" >> "$GITHUB_ENV"
 
+      - parallel:
+          - name: Upload test results
+            # fork PRs run with a read-only token, which cannot create check runs or PR comments
+            if: |
+              github.event_name != 'pull_request' ||
+              github.event.pull_request.head.repo.full_name == github.repository
+            uses: EnricoMi/publish-unit-test-result-action@v2.26.0
+            with:
+              check_name: Test results for Rust
+              github_token: ${{ secrets.GITHUB_TOKEN }}
+              files: |
+                reports/results.xml
+
+          - name: Run grcov
+            shell: bash
+            env:
+              GRCOV_OUTPUT_TYPES: lcov
+            run: |
+              ./generate-test-report.sh report
+
+          - name: Upload test results (to Codecov.io)
+            if: |
+              github.event_name != 'pull_request' ||
+              github.event.pull_request.head.repo.full_name == github.repository
+            uses: codecov/codecov-action@v7.1.1
+            with:
+              disable_search: true
+              disable_telem: true
+              env_vars: RUNNER_OS,RUST
+              fail_ci_if_error: true
+              flags: tests
+              files: reports/results.xml
+              name: test-results
+              plugins: noop
+              report_type: "test_results"
+              use_oidc: true
+
+      # the two Codecov.io uploads fail when run in parallel
       - parallel:
           - name: Upload coverage results (to Codecov.io)
             # fork PRs run without id-token, so OIDC upload cannot work. Push runs must keep uploading to preserve base coverage
@@ -227,23 +246,6 @@ jobs:
               oidc: true
               skip-errors: false
               tag: tests
-
-          - name: Upload test results (to Codecov.io)
-            if: |
-              github.event_name != 'pull_request' ||
-              github.event.pull_request.head.repo.full_name == github.repository
-            uses: codecov/codecov-action@v7.1.1
-            with:
-              disable_search: true
-              disable_telem: true
-              env_vars: RUNNER_OS,RUST
-              fail_ci_if_error: true
-              flags: tests
-              files: reports/results.xml
-              name: test-results
-              plugins: noop
-              report_type: "test_results"
-              use_oidc: true
 
       - name: Fail if tests failed
         shell: bash

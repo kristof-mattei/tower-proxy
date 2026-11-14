@@ -242,7 +242,7 @@ jobs:
             if: |
               github.event_name != 'pull_request' ||
               github.event.pull_request.head.repo.full_name == github.repository
-            uses: qltysh/qlty-action/coverage@v2.6.0
+            uses: qltysh/qlty-action/coverage@v2.7.0
             with:
               files: reports/lcov
               format: lcov

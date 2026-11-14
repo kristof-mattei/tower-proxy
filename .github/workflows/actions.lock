@@ -93,7 +93,7 @@ workflows:
         - 'dorny/paths-filter@v4.0.3'
         - 'enricomi/publish-unit-test-result-action@v2.26.0'
         - 'mozilla-actions/sccache-action@v0.0.11'
-        - 'qltysh/qlty-action@v2.6.0'
+        - 'qltysh/qlty-action@v2.7.0'
         - 'rui314/setup-mold@v1'
         - 'taiki-e/install-action@v2.90.3'
     '.github/workflows/spellcheck.yml':
@@ -219,9 +219,9 @@ dependencies:
         commit: 'sha1-73e46992e05b19abd31f2f3c20e0e7370d762115'
         owner_id: 21320719
         repo_id: 262289747
-    'qltysh/qlty-action@v2.6.0':
-        ref: 'v2.6.0'
-        commit: 'sha1-357cd88be7c73c5dc45cf7cf8f99a46ec0b62b73'
+    'qltysh/qlty-action@v2.7.0':
+        ref: 'v2.7.0'
+        commit: 'sha1-0ff2178667bf8eb28ed0013a7ef54857a24d4056'
         owner_id: 184769278
         repo_id: 873940193
     'rui314/setup-mold@v1':

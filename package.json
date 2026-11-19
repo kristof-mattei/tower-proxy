@@ -9,7 +9,7 @@
     },
     "devDependencies": {
         "@codecov/bundle-analyzer": "2.0.1",
-        "cspell": "10.5.1",
+        "cspell": "10.5.2",
         "oxfmt": "0.79.0",
         "tar": "7.5.23"
     },

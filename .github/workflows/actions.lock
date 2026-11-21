@@ -20,7 +20,7 @@ workflows:
         - 'docker/build-push-action@v7.4.0'
         - 'docker/login-action@v4.8.0'
         - 'docker/metadata-action@v6.2.0'
-        - 'docker/scout-action@v1.29.0'
+        - 'docker/scout-action@v1.30.0'
         - 'docker/setup-buildx-action@v4.4.1'
         - 'docker/setup-docker-action@v5.7.0'
         - 'docker/setup-qemu-action@v4.4.0'
@@ -32,7 +32,7 @@ workflows:
         - 'taiki-e/install-action@v2.90.6'
     '.github/workflows/compare-release-image.yml':
         - 'docker/login-action@v4.8.0'
-        - 'docker/scout-action@v1.29.0'
+        - 'docker/scout-action@v1.30.0'
         - 'docker/setup-buildx-action@v4.4.1'
         - 'docker/setup-docker-action@v5.7.0'
     '.github/workflows/container-cleanup.yml':
@@ -169,9 +169,9 @@ dependencies:
         commit: 'sha1-dc802804100637a589fabce1cb79ff13a1411302'
         owner_id: 5429470
         repo_id: 306769011
-    'docker/scout-action@v1.29.0':
-        ref: 'v1.29.0'
-        commit: 'sha1-e7e2a72bf1485d10a58f30696b6c513b261ce4fa'
+    'docker/scout-action@v1.30.0':
+        ref: 'v1.30.0'
+        commit: 'sha1-b265cd48f8a1451d2680815b3e8dc4ed65ee16e7'
         owner_id: 5429470
         repo_id: 607129616
     'docker/setup-buildx-action@v4.4.1':

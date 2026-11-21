@@ -32,7 +32,7 @@ jobs:
 
       # actionlint only reaches shell inside `run:` blocks, standalone scripts need their own pass
       - name: Install shellcheck
-        uses: taiki-e/install-action@v2.90.6
+        uses: taiki-e/install-action@v2.90.7
         with:
           tool: shellcheck
 

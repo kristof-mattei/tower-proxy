@@ -15,8 +15,8 @@ RUN apt-get update \
     && rm --recursive --force /var/lib/apt/lists/*
 
 # trixie only has cargo-auditable 0.6.6, we need >= 0.6.7 for a bare linker
-ADD --checksum=sha256:7676443367c5e33d9fb22acef63cccb5e9202de12dae1b0579995eb3e2bc7a18 https://github.com/rust-secure-code/cargo-auditable/releases/download/v0.7.7/cargo-auditable-x86_64-unknown-linux-musl.tar.xz /tmp/cargo-auditable-x86_64.tar.xz
-ADD --checksum=sha256:c324af56990601354bbf40080f582ba46f8ec8b807a1388e25bb7e429d285c18 https://github.com/rust-secure-code/cargo-auditable/releases/download/v0.7.7/cargo-auditable-aarch64-unknown-linux-musl.tar.xz /tmp/cargo-auditable-aarch64.tar.xz
+ADD --checksum=sha256:6de0005fc0d414551da45d679bca258565d521ff8ee51c9da10ceed6b957a033 https://github.com/rust-secure-code/cargo-auditable/releases/download/v0.7.8/cargo-auditable-x86_64-unknown-linux-musl.tar.xz /tmp/cargo-auditable-x86_64.tar.xz
+ADD --checksum=sha256:3a84e9242f1309e519e7eeb941e08c7857ca62ce663913c222a73481120461a5 https://github.com/rust-secure-code/cargo-auditable/releases/download/v0.7.8/cargo-auditable-aarch64-unknown-linux-musl.tar.xz /tmp/cargo-auditable-aarch64.tar.xz
 
 RUN tar --extract --xz --no-same-owner --strip-components 1 \
         --directory /usr/local/cargo/bin \
